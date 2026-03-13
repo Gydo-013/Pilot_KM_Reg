@@ -1,0 +1,3835 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="KM Registratie"/>
+<meta name="theme-color" content="#0b1120"/>
+<title>KM Registratie</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{
+    --clr-accent:#f59e0b;
+    --clr-bg:#0b1120;
+    --clr-surface:#0f172a;
+    --clr-card:#1e293b;
+  }
+  html{height:100%;background:var(--clr-bg)}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;
+    background:var(--clr-bg);color:#f1f5f9;min-height:100%;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  input,select,button{font-family:inherit;-webkit-appearance:none;appearance:none}
+  input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.4);cursor:pointer}
+  input[type=number]::-webkit-inner-spin-button{opacity:.4}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .vt-kaart{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #1e293b;cursor:default}
+  .vt-kaart:last-child{border-bottom:none;padding-bottom:0}
+  .vt-kleur-dot{width:34px;height:34px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .vt-kaart-body{flex:1;min-width:0}
+  .vt-kaart-naam{font-size:13px;font-weight:700;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vt-kaart-sub{font-size:11px;color:#475569;margin-top:1px}
+  .vt-kaart-acties{display:flex;gap:4px;flex-shrink:0}
+  .vt-fav-btn{background:none;border:none;cursor:pointer;padding:6px;border-radius:6px;line-height:0;transition:color .15s}
+  .brandstof-btn.active{background:var(--clr-accent)!important;color:var(--clr-surface)!important;border-color:var(--clr-accent)!important}
+  ::-webkit-scrollbar{width:4px;height:4px}
+  ::-webkit-scrollbar-track{background:var(--clr-bg)}
+  ::-webkit-scrollbar-thumb{background:#334155;border-radius:2px}
+
+  /* Layout */
+  #app{display:flex;flex-direction:column;min-height:100svh}
+
+  /* Topbar */
+  .topbar{
+    background:var(--clr-surface);border-bottom:1px solid var(--clr-card);
+    padding:0 16px;padding-top:env(safe-area-inset-top);
+    position:sticky;top:0;z-index:100;
+    display:flex;align-items:center;justify-content:space-between;
+    min-height:calc(52px + env(safe-area-inset-top));
+  }
+  .topbar-brand{display:flex;align-items:center;gap:10;overflow:hidden}
+  .brand-dot{width:8px;height:8px;border-radius:50%;background:var(--clr-accent);box-shadow:0 0 10px color-mix(in srgb,var(--clr-accent) 53%,transparent);flex-shrink:0}
+  .brand-title{font-size:13px;font-weight:700;letter-spacing:.08em;color:#f1f5f9;white-space:nowrap}
+  .brand-sub{font-size:11px;color:#475569;margin-left:4px;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}
+
+  /* Bottom nav */
+  .bottomnav{
+    position:fixed;bottom:0;left:0;right:0;z-index:100;
+    background:var(--clr-surface);border-top:1px solid var(--clr-card);
+    display:flex;justify-content:space-around;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .nav-btn{
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:10px 0;flex:1;border:none;cursor:pointer;font-size:10px;font-weight:600;
+    background:transparent;color:#64748b;transition:all .2s;letter-spacing:.04em;
+  }
+  .nav-btn.active{color:var(--clr-accent)}
+  .nav-btn svg{flex-shrink:0}
+
+  /* Pages */
+  .page{display:none;padding:20px 16px 100px;max-width:900px;margin:0 auto;width:100%}
+  .page.active{display:block}
+
+  /* Cards */
+  .card{background:var(--clr-card);border:1px solid #334155;border-radius:12px;padding:18px}
+  .card+.card,.card+.form-section{margin-top:12px}
+  .card-title{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--clr-accent);text-transform:uppercase;margin-bottom:14px}
+
+  /* Stats grid */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+  .stat{background:var(--clr-card);border:1px solid #334155;border-radius:10px;padding:14px 10px;text-align:center}
+  .stat-val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .stat-label{font-size:10px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:.07em}
+
+  /* Form */
+  .form-grid{display:grid;gap:14px}
+  .form-grid-2{grid-template-columns:1fr 1fr}
+  @media(max-width:480px){.form-grid-2{grid-template-columns:1fr}}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:11px;font-weight:700;letter-spacing:.1em;color:#94a3b8;text-transform:uppercase}
+  .field label .err{color:#f87171;font-weight:400;text-transform:none;font-size:10px;margin-left:4px}
+  .inp{
+    width:100%;padding:11px 14px;background:var(--clr-surface);
+    border:1.5px solid #334155;border-radius:8px;
+    color:#f1f5f9;font-size:14px;outline:none;
+    transition:border .18s;
+  }
+  .inp:focus{border-color:var(--clr-accent)}
+  .inp.err{border-color:#f87171}
+  .inp-wrap{position:relative}
+  .inp-wrap .inp{padding-right:40px}
+  .inp-suffix{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#475569;font-size:12px;font-variant-numeric:tabular-nums}
+
+  /* Toggle */
+  .toggle-row{display:flex;align-items:center;gap:10;cursor:pointer;user-select:none}
+  .toggle-track{
+    position:relative;width:44px;height:24px;border-radius:12px;
+    background:#334155;transition:background .22s;flex-shrink:0;
+    border:1px solid rgba(255,255,255,.08);cursor:pointer;
+  }
+  .toggle-track.on-amber{background:var(--clr-accent)}
+  .toggle-track.on-slate{background:#64748b}
+  .toggle-thumb{
+    position:absolute;top:3px;left:3px;width:16px;height:16px;
+    border-radius:50%;background:#fff;transition:left .22s;
+    box-shadow:0 1px 4px rgba(0,0,0,.4);
+  }
+  .toggle-track.checked .toggle-thumb{left:23px}
+  .toggle-label{font-size:13px;font-weight:500}
+  .toggle-label.active{font-weight:700}
+  .toggle-group{display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--clr-surface);border-radius:8px}
+  .toggle-divider{width:1px;height:28px;background:#334155;margin:0 4px}
+
+  /* Buttons */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    border:none;border-radius:8px;cursor:pointer;font-weight:600;
+    font-size:14px;padding:11px 20px;transition:all .18s;
+  }
+  .btn-primary{background:var(--clr-accent);color:var(--clr-surface)}
+  .btn-primary:active{filter:brightness(.85)}
+  .btn-ghost{background:transparent;color:#94a3b8;border:1.5px solid #334155;font-size:13px;padding:8px 14px}
+  .btn-ghost:active{background:var(--clr-card)}
+  .btn-sm{font-size:12px;padding:7px 13px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+
+  /* Dropdown */
+  .dropdown{position:relative}
+  .dropdown-list{
+    position:absolute;z-index:999;top:calc(100% + 4px);left:0;right:0;
+    background:var(--clr-card);border:1px solid #334155;border-radius:8px;
+    overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.6);
+    max-height:240px;overflow-y:auto;
+  }
+  .dropdown-item{
+    padding:10px 14px;cursor:pointer;border-bottom:1px solid #0f172a;
+    display:flex;align-items:center;gap:14px;
+  }
+  .dropdown-item:last-child{border-bottom:none}
+  .dropdown-item:active{background:#263246}
+  .dropdown-item-name{font-size:13px;color:#f1f5f9;font-weight:500}
+  .dropdown-item-sub{font-size:11px;color:#64748b;font-variant-numeric:tabular-nums}
+
+  /* Selected location pill */
+  .loc-selected{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:11px 14px;background:#0f172a;border:1.5px solid #f59e0b;
+    border-radius:8px;cursor:pointer;
+  }
+  .loc-selected-info{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .loc-selected-name{font-size:14px;color:#f1f5f9;font-weight:600}
+  .loc-selected-sub{font-size:12px;color:#64748b;font-variant-numeric:tabular-nums}
+  .loc-clear{color:#64748b;font-size:16px;line-height:1;padding:4px}
+
+  /* Preview bar */
+  .preview{
+    display:flex;gap:10px;flex-wrap:wrap;padding:11px 14px;
+    background:#0a1f12;border:1px solid #14532d;border-radius:8px;font-size:12px;
+  }
+  .preview span{color:#86efac}
+  .preview strong{color:#4ade80;font-variant-numeric:tabular-nums}
+  .preview .priv strong{color:#f87171}
+  .preview .priv span{color:#fca5a5}
+  .preview-dot{color:#334155}
+  .preview-note{font-size:11px;color:#f59e0b;margin-left:4px}
+
+  /* Table */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{padding:8px 10px;color:#64748b;font-weight:600;text-align:left;
+    letter-spacing:.06em;text-transform:uppercase;font-size:10px;
+    border-bottom:1px solid #334155;white-space:nowrap}
+  td{padding:9px 10px;border-bottom:1px solid rgba(15,23,42,.8);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tfoot td{border-top:2px solid #334155;border-bottom:none;font-weight:700}
+  .mono{font-variant-numeric:tabular-nums}
+  .text-right{text-align:right}
+  .badge{display:inline-block;padding:3px 7px;border-radius:4px;font-size:10px;font-weight:700}
+  .badge-werk{background:rgba(52,211,153,.12);color:#34d399}
+  .badge-priv{background:rgba(248,113,113,.12);color:#f87171}
+  .badge-omweg{background:rgba(245,158,11,.15);color:#f59e0b}
+  .del-btn{background:none;border:none;cursor:pointer;color:#334155;padding:6px;border-radius:4px}
+  .del-btn:active{color:#f87171}
+
+  /* Table header row */
+  .table-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+  select.year-sel{
+    background:#0f172a;border:1.5px solid #334155;border-radius:6px;
+    color:#f1f5f9;padding:7px 12px;font-size:12px;outline:none;
+    -webkit-appearance:none;cursor:pointer;
+  }
+
+  /* Info box */
+  .info-box{display:flex;gap:12px;padding:14px;background:#0f172a;border-radius:10px;margin-top:12px}
+  .info-box-icon{color:#f59e0b;flex-shrink:0;margin-top:1px}
+  .info-box p{font-size:12px;color:#64748b;line-height:1.7}
+  .info-box strong{color:#94a3b8}
+
+  /* Locatie list */
+  .loc-list{display:flex;flex-direction:column;gap:8px}
+  .loc-item{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 14px;background:#0f172a;border-radius:8px;border:1px solid #1e293b;
+  }
+  .loc-item-name{font-size:14px;color:#f1f5f9;font-weight:600}
+  .loc-item-sub{font-size:11px;color:#64748b;font-variant-numeric:tabular-nums;margin-top:2px}
+
+  /* Empty */
+  .empty{text-align:center;padding:40px 0;color:#475569;font-size:13px}
+
+  /* Toast */
+  .toast{
+    position:fixed;bottom:calc(80px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);
+    background:#1e293b;border:1px solid #334155;border-radius:10px;
+    padding:12px 20px;font-size:13px;color:#f1f5f9;font-weight:500;
+    box-shadow:0 8px 32px rgba(0,0,0,.5);opacity:0;transition:all .3s;pointer-events:none;
+    white-space:nowrap;z-index:9999;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* Divider */
+  .divider{height:1px;background:#334155;margin:4px 0}
+
+
+
+  /* Edit modal */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;z-index:500;
+    background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
+    align-items:flex-end;justify-content:center;
+  }
+  .modal-overlay.open{display:flex}
+  .modal{
+    background:#1e293b;border:1px solid #334155;
+    border-radius:16px 16px 0 0;padding:20px 18px;
+    padding-bottom:calc(20px + env(safe-area-inset-bottom));
+    width:100%;max-width:600px;max-height:90svh;overflow-y:auto;
+    animation:slideup .25s ease;
+  }
+  @keyframes slideup{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .modal-title{font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between}
+  .modal-close{background:none;border:none;color:#64748b;cursor:pointer;font-size:20px;line-height:1;padding:4px}
+  .sheet-status.ok{background:rgba(52,211,153,.12);color:#34d399}
+  .sheet-status.err{background:rgba(248,113,113,.12);color:#f87171}
+  .sheet-status.pending{background:rgba(245,158,11,.12);color:#f59e0b}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="brand-dot"></div>
+      <span class="brand-title">KM REGISTRATIE</span>
+      <span style="font-size:10px;color:#64748b;margin-left:6px;font-weight:600;letter-spacing:.06em;user-select:none;pointer-events:none;background:var(--clr-card);padding:2px 6px;border-radius:4px;border:1px solid #334155">v2.3</span>
+      <span class="brand-sub" id="topbar-sub"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+    </div>
+  </div>
+
+  <!-- RITTEN PAGE -->
+  <div class="page active" id="page-ritten">
+    <div id="geen-voertuig-banner" style="display:none;background:#ef444415;border:1px solid #ef444430;border-radius:10px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:#f87171;align-items:center;gap:10px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>Geen voertuig aangemaakt. <button onclick="showPage('voertuig',document.querySelector('[data-page=voertuig]'))" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px;margin-left:4px">Voertuig toevoegen</button></span>
+    </div>
+    <div id="priv-chart-wrap" style="display:none;margin-bottom:12px">
+      <div class="card" style="display:flex;align-items:center;gap:20;padding:20px">
+        <div style="flex-shrink:0">
+          <canvas id="donut-canvas" width="130" height="130"></canvas>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#94a3b8;text-transform:uppercase;margin-bottom:10px">Privé km <span id="donut-jaar"></span></div>
+          <div style="font-size:32px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em" id="donut-used">0 km</div>
+          <div style="font-size:12px;color:#64748b;margin-top:4px">van <span id="donut-max" style="color:#94a3b8;font-weight:600"></span> toegestaan</div>
+          <div style="margin-top:12px;height:6px;background:#1e293b;border-radius:3px;overflow:hidden">
+            <div id="donut-bar" style="height:100%;border-radius:3px;transition:width .6s ease;width:0%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px">
+            <span style="font-size:11px;color:#64748b" id="donut-resterend"></span>
+            <span style="font-size:11px;font-weight:700" id="donut-pct"></span>
+          </div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid #334155;font-size:11px;color:#475569" id="donut-pace"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val" id="stat-priv" style="color:#f87171">0 km</div>
+        <div class="stat-label" id="stat-priv-label">Privé dit jaar</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="stat-stand" style="color:#f59e0b">0 km</div>
+        <div class="stat-label">Huidige stand</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="stat-ritten" style="color:#34d399">0</div>
+        <div class="stat-label">Ritten dit jaar</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Rit registreren</div>
+      <div class="form-grid" style="gap:14px">
+        <div class="form-grid form-grid-2">
+          <div class="field">
+            <label>Datum</label>
+            <input class="inp" type="date" id="rit-datum" onchange="updatePreview()"/>
+          </div>
+          <div class="field">
+            <label>Tijd</label>
+            <input class="inp" type="time" id="rit-tijd" step="1"/>
+          </div>
+        </div>
+        <div class="form-grid form-grid-2">
+          <div class="field">
+            <label>Eindstand km <span class="err" id="err-eindkm"></span></label>
+            <div class="inp-wrap">
+              <input class="inp" type="number" id="rit-eindkm" placeholder="bijv. 12500" inputmode="numeric" oninput="onEindkmInput()"/>
+              <span class="inp-suffix">km</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Gereden km <span style="color:#475569;font-weight:400;font-size:10px;text-transform:none">(alternatief)</span></label>
+            <div class="inp-wrap">
+              <input class="inp" type="number" id="rit-geredenkm" placeholder="bijv. 42" inputmode="numeric" oninput="onGeredenkmInput()"/>
+              <span class="inp-suffix">km</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Aankomstlocatie <span class="err" id="err-locatie"></span></label>
+          <div id="loc-selector">
+            <div class="dropdown" id="loc-dropdown">
+              <input class="inp" type="text" id="loc-search" placeholder="Selecteer opgeslagen locatie…" autocomplete="off" oninput="filterLocs()" onfocus="openLocDropdown()" onblur="closeLocDropdown()"/>
+              <div class="dropdown-list" id="loc-list-dd" style="display:none"></div>
+            </div>
+            <div id="loc-selected-pill" style="display:none" onclick="clearLoc()">
+              <div class="loc-selected">
+                <div class="loc-selected-info">
+                  <span class="loc-selected-name" id="pill-naam"></span>
+                  <span class="loc-selected-sub mono" id="pill-sub"></span>
+                </div>
+                <span class="loc-clear">✕</span>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:8px;align-self:flex-start" onclick="toggleOverigeLoc()" id="btn-overige">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Overige locatie
+          </button>
+          <div id="overige-loc-wrap" style="display:none;margin-top:8px;padding:12px;background:#0f172a;border-radius:8px;border:1px solid #334155">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#f59e0b;text-transform:uppercase;margin-bottom:10px">Eenmalige locatie</div>
+            <div class="form-grid form-grid-2" style="gap:10px;margin-bottom:10px">
+              <div class="field">
+                <label>Naam</label>
+                <input class="inp" type="text" id="overige-naam" placeholder="Naam locatie"/>
+              </div>
+              <div class="field">
+                <label>Postcode</label>
+                <input class="inp" type="text" id="overige-pc" placeholder="1234 AB"/>
+              </div>
+            </div>
+            <div class="field">
+              <label>Plaats</label>
+              <input class="inp" type="text" id="overige-plaats" placeholder="Amsterdam"/>
+            </div>
+          </div>
+        </div>
+
+        <div class="toggle-group" style="flex-wrap:wrap;gap:10px">
+          <div class="toggle-row" onclick="toggleSwitch('isWerk')">
+            <span class="toggle-label" id="lbl-werk-off" style="color:#94a3b8">Privé</span>
+            <div class="toggle-track checked on-amber" id="track-isWerk">
+              <div class="toggle-thumb"></div>
+            </div>
+            <span class="toggle-label active" id="lbl-werk-on" style="color:#f59e0b">Werk</span>
+          </div>
+
+        </div>
+
+        <div id="preview-bar" style="display:none" class="preview">
+          <div><span>Afgelegd: </span><strong id="prev-af">0</strong> km</div>
+          <span class="preview-dot">·</span>
+          <div><span>Werk: </span><strong id="prev-werk">0</strong> km</div>
+          <span class="preview-dot">·</span>
+          <div class="priv"><span>Privé: </span><strong id="prev-priv">0</strong> km</div>
+          <span class="preview-note" id="prev-note"></span>
+        </div>
+
+        <div class="field">
+          <label>Opmerking <span style="color:#475569;font-weight:400;text-transform:none;font-size:10px">(optioneel)</span></label>
+          <input class="inp" type="text" id="rit-opmerking" placeholder="Bijv. klantbezoek, tankbeurt…"/>
+        </div>
+
+        <button class="btn btn-primary" id="btn-add-rit" onclick="addRit()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Rit opslaan
+        </button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="table-header">
+        <div class="card-title" style="margin-bottom:0">Rittenregistratie</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="year-sel" id="filter-jaar" onchange="renderTabel()"></select>
+
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="rit-table">
+          <thead>
+            <tr>
+              <th>Datum</th><th>Voertuig</th><th>Eindstand</th><th>Bestemming</th><th>Soort</th>
+              <th class="text-right">Afgelegd</th><th class="text-right">Werk</th><th class="text-right">Privé</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="rit-tbody"></tbody>
+          <tfoot id="rit-tfoot"></tfoot>
+        </table>
+      </div>
+      <div class="empty" id="rit-empty" style="display:none">Geen ritten geregistreerd voor dit jaar.</div>
+    </div>
+  </div>
+
+  <!-- LOCATIES PAGE -->
+  <div class="page" id="page-locaties">
+
+    <!-- Formulier: toevoegen / bewerken -->
+    <div class="card" style="margin-bottom:12px" id="loc-form-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="card-title" id="loc-form-title" style="margin-bottom:0">Locatie toevoegen</div>
+        <button class="btn btn-ghost" id="loc-cancel-btn" onclick="cancelEditLocatie()" style="display:none;font-size:12px;padding:5px 10px">&#x2715; Annuleren</button>
+      </div>
+      <input type="hidden" id="loc-edit-id"/>
+
+      <div class="form-grid" style="gap:12px">
+
+        <!-- Zoekbalk met suggesties -->
+        <div class="field">
+          <label>Zoeken</label>
+          <div style="position:relative">
+            <input class="inp" type="text" id="nom-input"
+              placeholder="Typ bedrijfsnaam, adres of postcode&#x2026;"
+              autocomplete="off" oninput="nomSearch()" onblur="setTimeout(closeNom,200)"/>
+            <div id="nom-spinner" style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;border:2px solid #334155;border-top-color:var(--clr-accent);border-radius:50%;animation:spin .8s linear infinite"></div>
+            <div id="nom-list" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:200;background:var(--clr-card);border:1px solid #334155;border-radius:10px;overflow:hidden;box-shadow:0 8px 24px #00000060;max-height:280px;overflow-y:auto"></div>
+          </div>
+          <div id="nom-status" style="font-size:10px;color:#475569;margin-top:3px;min-height:14px"></div>
+        </div>
+
+        <!-- Naam -->
+        <div class="field">
+          <label>Naam <span style="color:#f87171">*</span></label>
+          <input class="inp" type="text" id="loc-naam" placeholder="bijv. Bedrijf BV"/>
+        </div>
+
+        <!-- Postcode + Plaats naast elkaar -->
+        <div class="form-grid form-grid-2" style="gap:10px">
+          <div class="field">
+            <label>Postcode <span style="color:#f87171">*</span></label>
+            <input class="inp" type="text" id="loc-pc" placeholder="1234 AB" style="text-transform:uppercase"/>
+          </div>
+          <div class="field">
+            <label>Plaats <span style="color:#f87171">*</span></label>
+            <input class="inp" type="text" id="loc-plaats" placeholder="Amsterdam"/>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="saveLocatie()" style="align-self:flex-start">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          <span id="loc-save-label">Locatie opslaan</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Lijst -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <div class="card-title" id="loc-list-title" style="margin-bottom:0">Opgeslagen locaties</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <!-- Sortering -->
+          <select class="year-sel" id="loc-sort" onchange="renderLocaties()" style="font-size:11px;padding:5px 10px">
+            <option value="fav">Favoriet eerst</option>
+            <option value="naam">Op naam</option>
+            <option value="plaats">Op plaats</option>
+            <option value="postcode">Op postcode</option>
+          </select>
+          <!-- Zoekfilter -->
+          <input class="inp" type="text" id="loc-filter" placeholder="Filteren&#x2026;"
+            oninput="renderLocaties()"
+            style="font-size:11px;padding:6px 10px;width:110px;border-radius:8px"/>
+
+        </div>
+      </div>
+      <div id="loc-list-ul"></div>
+      <div class="empty" id="loc-empty">Nog geen locaties. Voeg er hierboven een toe.</div>
+    </div>
+  </div>
+
+  <!-- VOERTUIG PAGE -->
+  <div class="page" id="page-voertuig">
+
+    <!-- Lijst van voertuigen -->
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="card-title" style="margin-bottom:0">Mijn voertuigen</div>
+        <button class="btn btn-ghost btn-sm" onclick="cancelEditVoertuig();document.getElementById('vt-form-card').scrollIntoView({behavior:'smooth',block:'start'})" style="font-size:11px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Nieuw
+        </button>
+      </div>
+      <div id="vt-list"></div>
+      <div class="empty" id="vt-empty">Nog geen voertuigen. Voeg hieronder een voertuig toe.</div>
+    </div>
+
+    <!-- Formulier -->
+    <div class="card" style="margin-bottom:12px" id="vt-form-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="card-title" id="vt-form-title" style="margin-bottom:0">Voertuig toevoegen</div>
+        <button class="btn btn-ghost" id="vt-cancel-btn" onclick="cancelEditVoertuig()" style="display:none;font-size:12px;padding:5px 10px">&#x2715; Annuleren</button>
+      </div>
+      <input type="hidden" id="vt-edit-id"/>
+
+      <div class="form-grid" style="gap:14px">
+
+        <!-- Kenteken — centaal, groot, eerst -->
+        <div class="field">
+          <label>Kenteken</label>
+          <div style="position:relative">
+            <input class="inp" type="text" id="vt-kenteken" placeholder="AB-123-C"
+              style="text-transform:uppercase;font-size:18px;font-weight:700;letter-spacing:.12em;padding-right:44px"
+              oninput="onKentekenInput(this)" onblur="onKentekenBlur(this)"/>
+            <div id="vt-rdw-spinner" style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            </div>
+          </div>
+          <div id="vt-rdw-status" style="font-size:11px;margin-top:4px;min-height:16px"></div>
+        </div>
+
+        <!-- RDW-gegevens preview -->
+        <div id="vt-rdw-preview" style="display:none;background:var(--clr-surface);border-radius:10px;padding:12px 14px;border:1px solid #1e293b">
+          <div style="font-size:10px;color:#475569;font-weight:600;letter-spacing:.08em;margin-bottom:8px">OPGEHAALD VIA RDW</div>
+          <div id="vt-rdw-velden" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:12px"></div>
+        </div>
+
+        <!-- Merk + Type -->
+        <div class="form-grid form-grid-2" style="gap:10px">
+          <div class="field">
+            <label>Merk</label>
+            <input class="inp" type="text" id="vt-merk" placeholder="bijv. Toyota"/>
+          </div>
+          <div class="field">
+            <label>Type / Model</label>
+            <input class="inp" type="text" id="vt-type" placeholder="bijv. Yaris"/>
+          </div>
+        </div>
+
+        <!-- Beginstand -->
+        <div class="field">
+          <label>Beginstand (km) <span style="color:#f87171">*</span></label>
+          <div class="inp-wrap">
+            <input class="inp" type="number" id="vt-beginkm" placeholder="0" inputmode="numeric"/>
+            <span class="inp-suffix">km</span>
+          </div>
+        </div>
+
+        <!-- Brandstof -->
+        <div class="field">
+          <label>Brandstof <span style="color:#475569;font-weight:400;text-transform:none;font-size:10px">(meerdere mogelijk)</span></label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="brandstof-knoppen">
+            <button type="button" class="btn btn-ghost btn-sm brandstof-btn" data-bs="elektrisch" onclick="toggleBrandstof('elektrisch')">&#x26A1; Elektrisch</button>
+            <button type="button" class="btn btn-ghost btn-sm brandstof-btn" data-bs="benzine"    onclick="toggleBrandstof('benzine')">&#x26FD; Benzine</button>
+            <button type="button" class="btn btn-ghost btn-sm brandstof-btn" data-bs="diesel"     onclick="toggleBrandstof('diesel')">&#x1F6E2; Diesel</button>
+            <button type="button" class="btn btn-ghost btn-sm brandstof-btn" data-bs="lpg"        onclick="toggleBrandstof('lpg')">&#x1F535; LPG</button>
+          </div>
+        </div>
+
+        <!-- Kleur -->
+        <div class="field">
+          <label>Voertuigkleur</label>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div style="display:flex;gap:8px;flex-wrap:wrap" id="vt-kleur-swatches"></div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <label style="font-size:11px;color:#64748b;text-transform:none;letter-spacing:0">Eigen:</label>
+              <input type="color" id="vt-kleur-custom" value="#f59e0b"
+                style="width:36px;height:32px;border:1.5px solid #334155;border-radius:6px;background:var(--clr-surface);cursor:pointer;padding:2px"
+                oninput="setVtKleur(this.value)"/>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Opslaan -->
+        <div style="display:flex;gap:10px">
+          <div class="field" style="margin-bottom:12px">
+            <label>0-100 km/u (sec) <span style="font-size:10px;color:#475569">optioneel, handmatig invullen</span></label>
+            <input class="inp" type="number" id="vt-nul-honderd" placeholder="bijv. 8.4" step="0.1" min="0" inputmode="decimal"/>
+          </div>
+          <button class="btn btn-primary" onclick="saveVoertuig()" style="flex:1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span id="vt-save-label">Voertuig opslaan</span>
+          </button>
+          <button class="btn btn-ghost" id="vt-cancel-btn2" onclick="cancelEditVoertuig()" style="display:none">Annuleren</button>
+        </div>
+      </div>
+    </div>
+
+
+
+    <div class="info-box">
+      <div class="info-box-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 16v-4M12 8h.01"/><circle cx="12" cy="12" r="10"/></svg>
+      </div>
+      <p><strong>Omweg-schakelaar</strong> op de hoofdpagina:<br/>
+      Kies de richting: <strong>Woon→Werk</strong> gebruikt de woon-werk afstand, <strong>Werk→Woon</strong> gebruikt de werk-woon afstand. De ingestelde km gaan als werkkilometers, eventuele extra km als privékilometers.</p>
+    </div>
+  </div>
+
+  <!-- OVERZICHT PAGE -->
+  <div class="page" id="page-overzicht">
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title" style="margin-bottom:12px">Snelfilter</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="ov-snelknoppen"></div>
+    <div class="form-grid form-grid-2" style="gap:10px">
+      <div class="field">
+        <label>Van</label>
+        <input class="inp" type="date" id="ov-van" onchange="renderOverzicht()"/>
+      </div>
+      <div class="field">
+        <label>Tot en met</label>
+        <input class="inp" type="date" id="ov-tot" onchange="renderOverzicht()"/>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title" style="margin-bottom:12px">Filters</div>
+    <div class="form-grid" style="gap:12px">
+      <div class="field">
+        <label>Voertuig</label>
+        <select class="inp" id="ov-voertuig" onchange="renderOverzicht()">
+          <option value="">Alle voertuigen</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Soort rit</label>
+        <select class="inp" id="ov-soort" onchange="renderOverzicht()">
+          <option value="">Alle soorten</option>
+          <option value="werk">Werk</option>
+          <option value="priv">Privé</option>
+          <option value="omweg">Omweg</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Locatie</label>
+        <input class="inp" type="text" id="ov-locatie" placeholder="Zoek op locatienaam…" oninput="renderOverzicht()"/>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-ghost btn-sm" onclick="resetOvFilters()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Filters wissen
+      </button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title" style="margin-bottom:14px">Resultaat <span id="ov-count" style="color:#64748b;font-size:12px;font-weight:400"></span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+      <div style="background:#0f172a;border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Totaal</div>
+        <div style="font-size:22px;font-weight:700;color:#f1f5f9" id="ov-totaal">0 km</div>
+      </div>
+      <div style="background:#0f172a;border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Werk</div>
+        <div style="font-size:22px;font-weight:700;color:#34d399" id="ov-werk">0 km</div>
+      </div>
+      <div style="background:#0f172a;border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Privé</div>
+        <div style="font-size:22px;font-weight:700;color:#f87171" id="ov-priv">0 km</div>
+      </div>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table class="rit-table" id="ov-table" style="display:none">
+        <thead>
+          <tr>
+            <th>Datum</th><th>Voertuig</th><th>Bestemming</th><th>Soort</th>
+            <th class="text-right">Werk</th><th class="text-right">Privé</th>
+          </tr>
+        </thead>
+        <tbody id="ov-tbody"></tbody>
+      </table>
+      <div class="empty" id="ov-empty" style="display:none">Geen ritten gevonden met deze filters.</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="modal-overlay" id="edit-modal" onclick="closeEditModal(event)">
+  <div class="modal">
+    <div class="modal-title">
+      Rit aanpassen
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="form-grid" style="gap:14px">
+
+      <div class="field">
+        <label>Voertuig</label>
+        <select class="inp" id="edit-voertuig">
+          <option value="">— geen voertuig —</option>
+        </select>
+      </div>
+
+      <div class="form-grid form-grid-2">
+        <div class="field">
+          <label>Datum</label>
+          <input class="inp" type="date" id="edit-datum"/>
+        </div>
+        <div class="field">
+          <label>Tijd</label>
+          <input class="inp" type="time" id="edit-tijd" step="1"/>
+        </div>
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="field">
+          <label>Eindstand km</label>
+          <div class="inp-wrap">
+            <input class="inp" type="number" id="edit-eindkm" inputmode="numeric"/>
+            <span class="inp-suffix">km</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Aankomstlocatie</label>
+        <div id="edit-loc-dropdown" style="position:relative">
+          <input class="inp" type="text" id="edit-loc-search" placeholder="Zoek locatie…" autocomplete="off"
+            oninput="filterEditLocs()" onfocus="openEditLocDropdown()" onblur="closeEditLocDropdown()"/>
+          <div class="dropdown-list" id="edit-loc-list-dd" style="display:none"></div>
+        </div>
+        <div id="edit-loc-pill" style="display:none;margin-top:6px" onclick="clearEditLoc()">
+          <div class="loc-selected">
+            <div class="loc-selected-info">
+              <span class="loc-selected-name" id="edit-pill-naam"></span>
+              <span class="loc-selected-sub mono" id="edit-pill-sub"></span>
+            </div>
+            <span class="loc-clear">✕</span>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:8px;align-self:flex-start" onclick="toggleEditOverige()" id="edit-btn-overige">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Overige locatie
+        </button>
+        <div id="edit-overige-wrap" style="display:none;margin-top:8px;padding:12px;background:#0f172a;border-radius:8px;border:1px solid #334155">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#f59e0b;text-transform:uppercase;margin-bottom:10px">Eenmalige locatie</div>
+          <div class="form-grid form-grid-2" style="gap:10px;margin-bottom:10px">
+            <div class="field">
+              <label>Naam</label>
+              <input class="inp" type="text" id="edit-overige-naam" placeholder="Naam locatie"/>
+            </div>
+            <div class="field">
+              <label>Postcode</label>
+              <input class="inp" type="text" id="edit-overige-pc" placeholder="1234 AB"/>
+            </div>
+          </div>
+          <div class="field">
+            <label>Plaats</label>
+            <input class="inp" type="text" id="edit-overige-plaats" placeholder="Amsterdam"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="toggle-group" style="flex-wrap:wrap;gap:10px">
+        <div class="toggle-row" onclick="toggleEditSwitch('isWerk')">
+          <span class="toggle-label" id="edit-lbl-werk-off" style="color:#94a3b8">Privé</span>
+          <div class="toggle-track checked on-amber" id="edit-track-isWerk"><div class="toggle-thumb"></div></div>
+          <span class="toggle-label active" id="edit-lbl-werk-on" style="color:#f59e0b">Werk</span>
+        </div>
+        <div class="toggle-divider"></div>
+
+      </div>
+
+      <div class="field">
+        <label>Opmerking <span style="color:#475569;font-weight:400;text-transform:none;font-size:10px">(optioneel)</span></label>
+        <input class="inp" type="text" id="edit-opmerking" placeholder="Bijv. klantbezoek, tankbeurt…"/>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="btn btn-primary" onclick="saveEditRit()" style="flex:1">Opslaan</button>
+        <button class="btn btn-ghost" onclick="closeEditModal()" style="flex:1">Annuleren</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP INSTELLINGEN PAGE -->
+<div class="page" id="page-instellingen" style="margin-top:calc(52px + env(safe-area-inset-top))">
+
+  <!-- ── Rijinstellingen ─────────────────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">Rijinstellingen</div>
+    <div class="form-grid" style="gap:16px">
+      <div class="divider"></div>
+      <div class="field">
+        <label>Maximum privé km per jaar</label>
+        <p style="font-size:12px;color:#64748b;margin-bottom:8px">Toont een voortgangscirkel op de ritpagina. Laat 0 voor uitschakelen.</p>
+        <div class="inp-wrap">
+          <input class="inp" type="number" id="vt-maxpriv" placeholder="500" inputmode="numeric"/>
+          <span class="inp-suffix">km</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="saveSettings()" style="align-self:flex-start" id="btn-save-vt">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Opslaan
+        </button>
+        <button class="btn btn-ghost" onclick="herberekeningAlles()" style="align-self:flex-start" id="btn-herbereken" title="Herberekent alle ritten">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Herberekenen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Kleurmodus ──────────────────────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">Kleurmodus</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="theme-mode-btn" data-mode="light"    onclick="setColorMode('light')"   >&#x2600;&#xFE0F; Licht</button>
+      <button class="theme-mode-btn" data-mode="dark"     onclick="setColorMode('dark')"    >&#x1F319; Donker</button>
+      <button class="theme-mode-btn" data-mode="auto"     onclick="setColorMode('auto')"    >&#x1F504; Auto</button>
+      <button class="theme-mode-btn" data-mode="voertuig" onclick="setColorMode('voertuig')">&#x1F697; Voertuig kleur</button>
+    </div>
+    <div id="voertuig-mode-info" style="display:none;margin-top:10px;font-size:12px;color:#64748b">
+      De accentkleur volgt automatisch de kleur van het actieve voertuig.
+    </div>
+  </div>
+
+  <!-- ── Accentkleur ─────────────────────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:12px" id="accent-card">
+    <div class="card-title">Accentkleur</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap" id="accent-swatches"></div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
+      <label style="font-size:11px;color:#64748b;white-space:nowrap;text-transform:none;letter-spacing:0">Eigen kleur:</label>
+      <input type="color" id="accent-custom" style="width:40px;height:32px;border:1.5px solid #334155;border-radius:6px;background:var(--clr-surface);cursor:pointer;padding:2px" oninput="applyAccent(this.value)"/>
+    </div>
+  </div>
+
+  <!-- ── Achtergrondkleur ────────────────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:12px" id="bg-card">
+    <div class="card-title">Achtergrondkleur</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap" id="bg-swatches"></div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
+      <label style="font-size:11px;color:#64748b;white-space:nowrap;text-transform:none;letter-spacing:0">Eigen kleur:</label>
+      <input type="color" id="bg-custom" style="width:40px;height:32px;border:1.5px solid #334155;border-radius:6px;background:var(--clr-surface);cursor:pointer;padding:2px" oninput="applyBg(this.value)"/>
+    </div>
+  </div>
+
+  <button class="btn btn-ghost btn-sm" style="margin-bottom:12px" onclick="resetTheme()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+    Kleuren herstellen
+  </button>
+
+  <!-- ── Import & Export ────────────────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title" style="display:flex;align-items:center;gap:6px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Import &amp; Export
+    </div>
+    <p style="font-size:12px;color:#64748b;margin-bottom:14px">Exporteer of importeer gegevens per onderdeel als CSV-bestand.</p>
+
+    <!-- Verborgen file inputs -->
+    <input type="file" id="csv-import-input"    accept=".csv" style="display:none" onchange="importCSV(this)"/>
+    <input type="file" id="loc-import-input"    accept=".csv" style="display:none" onchange="importLocaties(this)"/>
+    <input type="file" id="vt-import-input"     accept=".csv" style="display:none" onchange="importVoertuigen(this)"/>
+    <input type="file" id="vb-import-input"     accept=".csv" style="display:none" onchange="importVerbruik(this)"/>
+
+    <!-- Rijen per tab -->
+    <div style="display:flex;flex-direction:column;gap:10px">
+
+      <!-- Voertuigen -->
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="flex:1;font-size:13px;color:#cbd5e1;font-weight:500">Voertuigen</span>
+        <button class="btn btn-ghost btn-sm" onclick="exportVoertuigen()" style="gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Exporteer
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('vt-import-input').click()" style="gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5M12 5v10M17 10l-5-5"/></svg> Importeer
+        </button>
+      </div>
+
+      <!-- Locaties -->
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="flex:1;font-size:13px;color:#cbd5e1;font-weight:500">Locaties</span>
+        <button class="btn btn-ghost btn-sm" onclick="exportLocaties()" style="gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Exporteer
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('loc-import-input').click()" style="gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5M12 5v10M17 10l-5-5"/></svg> Importeer
+        </button>
+      </div>
+
+      <!-- Ritten -->
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="flex:1;font-size:13px;color:#cbd5e1;font-weight:500">Ritten</span>
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()" style="gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Exporteer
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('csv-import-input').click()" style="gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5M12 5v10M17 10l-5-5"/></svg> Importeer
+        </button>
+      </div>
+
+      <!-- Verbruik -->
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="flex:1;font-size:13px;color:#cbd5e1;font-weight:500">Verbruik</span>
+        <button class="btn btn-ghost btn-sm" onclick="exportVerbruik()" style="gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Exporteer
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('vb-import-input').click()" style="gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5M12 5v10M17 10l-5-5"/></svg> Importeer
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Voertuig koppeling ────────────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title" style="display:flex;align-items:center;gap:6px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      Voertuig koppeling
+    </div>
+    <div id="inst-koppel-voertuig-label" style="font-size:12px;color:#64748b;margin-bottom:12px">
+      Van toepassing op het actieve voertuig: <span id="inst-actief-label" style="color:#f1f5f9;font-weight:600">—</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="koppelRittenZonderVoertuig()" style="justify-content:flex-start;gap:10px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Koppel ritten <em style="margin:0 2px">zonder</em> voertuig aan actief voertuig
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="koppelAlleRitten()" style="justify-content:flex-start;gap:10px;color:#f87171">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Koppel <em style="margin:0 2px">alle</em> ritten aan actief voertuig
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Gegevensbeheer ──────────────────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:12px;border-color:#ef444430">
+    <div class="card-title" style="color:#f87171;display:flex;align-items:center;gap:6px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Gegevensbeheer
+    </div>
+    <p style="font-size:12px;color:#64748b;margin-bottom:14px">Verwijderde gegevens kunnen niet worden teruggezet. Er wordt twee keer om bevestiging gevraagd.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn btn-sm" style="background:#ef444418;color:#f87171;border:1px solid #ef444430;grid-column:1/-1" onclick="wisData('alles')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        Alles wissen
+      </button>
+      <button class="btn btn-sm" style="background:#1e293b;color:#94a3b8;border:1px solid #334155" onclick="wisData('ritten')">Ritten wissen</button>
+      <button class="btn btn-sm" style="background:#1e293b;color:#94a3b8;border:1px solid #334155" onclick="wisData('verbruik')">Verbruik wissen</button>
+      <button class="btn btn-sm" style="background:#1e293b;color:#94a3b8;border:1px solid #334155" onclick="wisData('locaties')">Locaties wissen</button>
+      <button class="btn btn-sm" style="background:#1e293b;color:#94a3b8;border:1px solid #334155" onclick="wisData('voertuigen')">Voertuigen wissen</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div style="font-size:11px;color:#64748b;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">Versiegeschiedenis</div>
+
+    <!-- Huidige versie -->
+    <div style="padding:10px 12px;background:color-mix(in srgb,var(--clr-accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--clr-accent) 30%,transparent);border-radius:8px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:700;color:var(--clr-accent)">v2.3</span>
+        <span style="font-size:10px;background:color-mix(in srgb,var(--clr-accent) 20%,transparent);color:var(--clr-accent);border-radius:4px;padding:1px 6px;font-weight:600">Huidig</span>
+      </div>
+      <ul style="font-size:12px;color:#94a3b8;line-height:1.9;padding-left:16px;margin:0">
+        <li>Omweg / directe rit functionaliteit volledig verwijderd</li>
+        <li>Woon-werk en werk-woon km instellingen verwijderd</li>
+        <li>Alle ritten zijn direct — soort is uitsluitend Werk of Privé</li>
+        <li>Google aanmelding en Sheets koppeling verwijderd</li>
+        <li>Gereden km veld geblokkeerd bij Privé schakelaar</li>
+        <li>Code volledig opgeschoond van dode code</li>
+      </ul>
+    </div>
+    <!-- v2.2 als eerdere versie -->
+    <div style="padding:10px 12px;background:#1e293b;border-radius:8px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:700;color:#64748b">v2.2</span>
+      </div>
+      <ul style="font-size:12px;color:#64748b;line-height:1.9;padding-left:16px;margin:0">
+        <li>Bugfix: gereden km verrekende niet correct met privé ritten</li>
+        <li>privKm live berekend in verwerkGeredenKm</li>
+        <li>CSV import &amp; export verplaatst naar Instellingen-tabblad</li>
+        <li>Export en import toegevoegd voor Voertuigen en Verbruik</li>
+      </ul>
+    </div>
+    <!-- v2.1 als eerdere versie -->
+    <div style="padding:10px 12px;background:#1e293b;border-radius:8px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:700;color:#64748b">v2.1</span>
+      </div>
+      <ul style="font-size:12px;color:#64748b;line-height:1.9;padding-left:16px;margin:0">
+        <li>Voertuig koppeling verplaatst naar Instellingen-tabblad</li>
+        <li>Koppelknoppen werken op actief/favoriet voertuig</li>
+        <li>Gereden km correctie-algoritme herschreven per spec</li>
+        <li>Bugfix: syntaxfouten hersteld (literal newlines in JS-strings)</li>
+      </ul>
+    </div>
+    <!-- v2.0 als eerdere versie -->
+    <div style="padding:10px 12px;background:#1e293b;border-radius:8px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:700;color:#64748b">v2.0</span>
+      </div>
+      <ul style="font-size:12px;color:#64748b;line-height:1.9;padding-left:16px;margin:0">
+        <li>RDW-koppeling bij kenteken invoer (merk, type, kleur, brandstof)</li>
+        <li>Rijinstellingen verplaatst naar Instellingen-tabblad</li>
+        <li>Gegevensbeheer: 5 aparte wis-knoppen met dubbele bevestiging</li>
+        <li>Locaties: bewerken, sorteren, filteren, favoriet, CSV export/import</li>
+        <li>Voertuig: koppelknoppen ritten zonder/alle voertuig</li>
+        <li>Verbruik: prijs per eenheid, EnergyZero live tarief, voertuigfilter</li>
+      </ul>
+    </div>
+
+    <!-- Eerdere versies -->
+    <details>
+      <summary style="font-size:11px;color:#475569;cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:6px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        Eerdere versies bekijken
+      </summary>
+      <div style="font-size:11px;color:#64748b;line-height:1.9;margin-top:10px;padding-top:10px;border-top:1px solid #1e293b">
+        <div style="font-weight:700;color:#475569;margin-bottom:4px">v1.38</div>
+        <ul style="padding-left:14px;margin:0 0 10px">
+          <li>CSV-import verbeterd, voertuigen auto-aanmaken</li>
+          <li>Gereden km invoer als alternatief voor eindstand</li>
+          <li>Gegevensbeheer knoppen toegevoegd</li>
+          <li>Gelijkmatige tab-uitlijning onderste balk</li>
+        </ul>
+        <div style="font-weight:700;color:#475569;margin-bottom:4px">v1.30</div>
+        <ul style="padding-left:14px;margin:0 0 10px">
+          <li>Kleurmodi: Licht / Donker / Auto / Voertuigkleur</li>
+          <li>Versiegeschiedenis naar Instellingen-tab</li>
+          <li>Overzicht-tabblad met filters en kwartaalknoppen</li>
+          </ul>
+        <div style="font-weight:700;color:#475569;margin-bottom:4px">v1.20</div>
+        <ul style="padding-left:14px;margin:0 0 10px">
+          <li>Meerdere voertuigen met favoriet/actief</li>
+          <li>Tijdstip registreren per rit (HH:MM:SS)</li>
+          <li>Edit modal voor bestaande ritten</li>
+          <li>Herberekening volgende ritten na vergeten rit</li>
+          <li>Omweg richting keuze (woon-werk / werk-woon)</li>
+        </ul>
+        <div style="font-weight:700;color:#475569;margin-bottom:4px">v1.10</div>
+        <ul style="padding-left:14px;margin:0 0 10px">
+          <li>Cirkeldiagram privé km voortgang</li>
+          <li>Max privé km per jaar instelling</li>
+          <li>Overige locatie (eenmalig, niet opgeslagen)</li>
+          <li>Locaties favorieten</li>
+          <li>CSV exporteren en importeren</li>
+        </ul>
+        <div style="font-weight:700;color:#475569;margin-bottom:4px">v1.00</div>
+        <ul style="padding-left:14px;margin:0">
+          <li>Initiële opzet standalone PWA</li>
+          <li>Rit registratie met werk/privé toggle</li>
+          <li>Locaties met Nominatim autocomplete</li>
+          <li>Statistieken (privé km, stand, ritten)</li>
+        </ul>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- VERBRUIK PAGE -->
+<div class="page" id="page-verbruik" style="margin-top:calc(52px + env(safe-area-inset-top))">
+
+  <!-- 4 statistieken tegels -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+    <div class="stat" style="border-radius:12px">
+      <div class="stat-val" id="vb-gem-verbruik" style="color:var(--clr-accent)">&#x2013;</div>
+      <div class="stat-label" id="vb-verbruik-label">L / 100 km</div>
+    </div>
+    <div class="stat" style="border-radius:12px">
+      <div class="stat-val" id="vb-totaal-kosten" style="color:#34d399">&#x20ac; &#x2013;</div>
+      <div class="stat-label">Totaal kosten</div>
+    </div>
+    <div class="stat" style="border-radius:12px">
+      <div class="stat-val" id="vb-kosten-per-km" style="color:#f87171">&#x20ac; &#x2013;</div>
+      <div class="stat-label">Per km</div>
+    </div>
+    <div class="stat" style="border-radius:12px">
+      <div class="stat-val" id="vb-totaal-hoeveelheid" style="color:#94a3b8">&#x2013;</div>
+      <div class="stat-label" id="vb-hoeveelheid-totaal-label">Totaal L</div>
+    </div>
+  </div>
+
+  <!-- Grafiek -->
+  <div class="card" style="margin-bottom:12px;padding:16px 14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:0">Verbruik over tijd</div>
+    </div>
+    <canvas id="vb-chart" style="width:100%;height:160px;display:block"></canvas>
+    <div id="vb-chart-empty" style="display:none;text-align:center;color:#475569;font-size:13px;padding:30px 0">
+      <div style="font-size:24px;margin-bottom:8px">&#x1F4CA;</div>
+      Minimaal 2 volle beurten nodig voor grafiek
+    </div>
+  </div>
+
+  <!-- Invoerformulier -->
+  <div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="card-title" id="vb-form-title" style="margin-bottom:0">Toevoegen</div>
+      <button class="btn btn-ghost" id="vb-cancel-btn" onclick="cancelEditVerbruik()" style="display:none;font-size:12px;padding:5px 10px">&#x2715; Annuleren</button>
+    </div>
+    <input type="hidden" id="vb-edit-id"/>
+
+    <!-- Actief voertuig -->
+    <div id="vb-voertuig-label" style="font-size:11px;color:#64748b;margin-bottom:12px;padding:7px 12px;background:var(--clr-surface);border-radius:7px"></div>
+
+    <!-- Type pill-tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:14px;background:var(--clr-surface);border-radius:10px;padding:4px" id="vb-type-tabs">
+      <button type="button" class="vb-type-btn" data-type="brandstof" onclick="setVbType('brandstof')" style="flex:1;padding:8px 4px;border:none;border-radius:7px;background:transparent;color:#64748b;font-size:12px;font-weight:600;cursor:pointer;transition:all .18s;font-family:inherit">&#x26FD; Tank</button>
+      <button type="button" class="vb-type-btn" data-type="elektrisch" onclick="setVbType('elektrisch')" style="flex:1;padding:8px 4px;border:none;border-radius:7px;background:transparent;color:#64748b;font-size:12px;font-weight:600;cursor:pointer;transition:all .18s;font-family:inherit">&#x26A1; Laden</button>
+      <button type="button" class="vb-type-btn" data-type="overig" onclick="setVbType('overig')" style="flex:1;padding:8px 4px;border:none;border-radius:7px;background:transparent;color:#64748b;font-size:12px;font-weight:600;cursor:pointer;transition:all .18s;font-family:inherit">&#x1F527; Overig</button>
+    </div>
+
+    <div class="form-grid" style="gap:12px">
+
+      <!-- Datum + Tijd -->
+      <div class="form-grid form-grid-2" style="gap:10px">
+        <div class="field">
+          <label>Datum</label>
+          <input class="inp" type="date" id="vb-datum"/>
+        </div>
+        <div class="field">
+          <label>Tijd</label>
+          <input class="inp" type="time" id="vb-tijd"/>
+        </div>
+      </div>
+
+      <!-- Km-stand -->
+      <div class="field">
+        <label>Km-stand <span style="color:#475569;font-weight:400;text-transform:none;font-size:10px">(optioneel)</span></label>
+        <div class="inp-wrap">
+          <input class="inp" type="number" id="vb-km" inputmode="numeric" placeholder="bijv. 36500"/>
+          <span class="inp-suffix">km</span>
+        </div>
+        <div id="vb-km-hint" style="font-size:10px;color:#475569;margin-top:2px"></div>
+      </div>
+
+      <!-- Hoeveelheid + Prijs per eenheid -->
+      <div class="form-grid form-grid-2" style="gap:10px" id="vb-hoeveelheid-field">
+        <div class="field">
+          <label id="vb-hoeveelheid-label">Hoeveelheid</label>
+          <div class="inp-wrap">
+            <input class="inp" type="number" id="vb-hoeveelheid" inputmode="decimal" step="0.01" placeholder="0.00"/>
+            <span class="inp-suffix" id="vb-hoeveelheid-suffix">L</span>
+          </div>
+        </div>
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:6px">
+            <span id="vb-prijs-label">Prijs per L</span>
+            <span id="vb-tarief-badge" style="display:none;font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;background:rgba(52,211,153,.12);color:#34d399"></span>
+          </label>
+          <div class="inp-wrap">
+            <input class="inp" type="number" id="vb-prijs-per-e" inputmode="decimal" step="0.001" placeholder="0.000"/>
+            <span class="inp-suffix">&#x20ac;</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Berekende totaalprijs -->
+      <div id="vb-totaalprijs-wrap" style="display:none;font-size:12px;color:#64748b;background:var(--clr-surface);border-radius:6px;padding:8px 12px;display:none">
+        Totaalprijs: <span id="vb-totaalprijs-val" style="color:#34d399;font-weight:700;font-size:14px">&#x2013;</span>
+      </div>
+
+      <!-- Vol toggle -->
+      <div class="field" id="vb-vol-field">
+        <label>Vol getankt?</label>
+        <div class="toggle-group" onclick="toggleVbVol()" style="cursor:pointer;padding:10px 12px">
+          <span style="font-size:12px;color:#94a3b8">Gedeeltelijk</span>
+          <div class="toggle-track" id="vb-vol-track"><div class="toggle-thumb"></div></div>
+          <span style="font-size:12px" id="vb-vol-label">Vol</span>
+        </div>
+      </div>
+
+      <!-- Opmerking -->
+      <div class="field">
+        <label>Opmerking <span style="font-weight:400;text-transform:none;font-size:10px;color:#475569">(optioneel)</span></label>
+        <input class="inp" type="text" id="vb-opmerking" placeholder=""/>
+      </div>
+
+      <button class="btn btn-primary" onclick="saveVerbruik()" style="width:100%">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span id="vb-save-label">Opslaan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Historie -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:0">Historie</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <select class="year-sel" id="vb-filter-voertuig" onchange="renderVerbruik()" style="font-size:11px;padding:5px 10px"></select>
+        <div id="vb-count" style="font-size:11px;color:#475569"></div>
+      </div>
+    </div>
+    <div id="vb-lijst"></div>
+    <div class="empty" id="vb-empty">Nog geen beurten geregistreerd.</div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV — Verbruik is nu de 2e tab -->
+<nav class="bottomnav">
+  <button class="nav-btn active" data-page="ritten" onclick="showPage('ritten',this)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    Ritten
+  </button>
+  <button class="nav-btn" data-page="verbruik" onclick="showPage('verbruik',this)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-4"/></svg>
+    Verbruik
+  </button>
+  <button class="nav-btn" data-page="locaties" onclick="showPage('locaties',this)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+    Locaties
+  </button>
+  <button class="nav-btn" data-page="voertuig" onclick="showPage('voertuig',this)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H3a2 2 0 01-2-2V9a2 2 0 012-2h1l2-4h10l2 4h1a2 2 0 012 2v6a2 2 0 01-2 2h-2m-5 1a2 2 0 100-4 2 2 0 000 4zm-6 0a2 2 0 100-4 2 2 0 000 4"/></svg>
+    Voertuig
+  </button>
+  <button class="nav-btn" data-page="overzicht" onclick="showPage('overzicht',this)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Overzicht
+  </button>
+  <button class="nav-btn" data-page="instellingen" onclick="showPage('instellingen',this)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Instellingen
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<style>
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .brandstof-btn.active{background:var(--clr-accent)!important;color:var(--clr-surface)!important;border-color:var(--clr-accent)!important}
+  .swatch{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;flex-shrink:0;transition:all .15s}
+  .swatch.selected{border-color:#fff;transform:scale(1.15)}
+  .theme-mode-btn{flex:1;padding:10px 8px;border-radius:8px;border:1.5px solid #334155;background:transparent;color:#64748b;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;font-family:inherit}
+  .theme-mode-btn.active{background:var(--clr-accent);color:var(--clr-surface);border-color:var(--clr-accent)}
+  .vb-type-btn.active{background:var(--clr-accent)!important;color:var(--clr-surface)!important}
+  .vb-kaart{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #1e293b}
+  .vb-kaart:last-child{border-bottom:none;padding-bottom:0}
+  .vb-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .vb-kaart-body{flex:1;min-width:0}
+  .vb-kaart-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px}
+  .vb-kaart-datum{font-size:12px;font-weight:700;color:#f1f5f9}
+  .vb-kaart-prijs{font-size:13px;font-weight:700;color:#34d399}
+  .vb-kaart-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:#64748b}
+  .vb-kaart-acties{display:flex;gap:4px;flex-shrink:0;align-self:flex-start;margin-top:2px}
+  [data-color-mode="light"] body{color:#0f172a}
+  [data-color-mode="light"] .card{border-color:var(--clr-border,#cbd5e1)}
+  [data-color-mode="light"] .inp{border-color:var(--clr-border,#cbd5e1);color:#0f172a}
+  [data-color-mode="light"] .card-title{color:var(--clr-accent)}
+  [data-color-mode="light"] .brand-title{color:#0f172a}
+  [data-color-mode="light"] .stat-val{color:#0f172a}
+  [data-color-mode="light"] .toggle-group{border:1px solid var(--clr-border,#cbd5e1)}
+  [data-color-mode="light"] .toggle-divider{background:#cbd5e1}
+  [data-color-mode="light"] .bottomnav{border-top-color:var(--clr-border,#cbd5e1)}
+  [data-color-mode="light"] .topbar{border-bottom-color:var(--clr-border,#cbd5e1)}
+  [data-color-mode="light"] .dropdown-list{border-color:#cbd5e1}
+  [data-color-mode="light"] .loc-item{border-color:#cbd5e1}
+  [data-color-mode="light"] .rit-table th{color:#475569}
+  [data-color-mode="light"] .theme-mode-btn{border-color:#cbd5e1;color:#475569}
+</style>
+
+<script>
+const DB = {
+  get(k, def=null){ try{ const v=localStorage.getItem(k); return v!=null?JSON.parse(v):def; }catch{return def;} },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} }
+};
+
+let settings   = DB.get('km-settings', { maxPrivKm:0, actieveVoertuigId:null, actieveVoertuigKenteken:null });
+let locaties   = DB.get('km-locaties', []);
+let ritten     = DB.get('km-ritten', []);
+let voertuigen = DB.get('km-voertuigen', []);
+let verbruiken = DB.get('km-verbruiken', []);
+
+if(!voertuigen.length && (settings.naam || settings.beginKm)){
+  const migV = { id:Date.now(), merk:'', type:'', kenteken: settings.naam||'', beginKm: settings.beginKm||0, favoriet:1 };
+  voertuigen.push(migV);
+  settings.actieveVoertuigId = migV.id;
+  DB.set('km-voertuigen', voertuigen);
+}
+
+function save(){ DB.set('km-settings',settings); DB.set('km-locaties',locaties); DB.set('km-ritten',ritten); DB.set('km-voertuigen',voertuigen); DB.set('km-verbruiken',verbruiken); }
+function getActiefVoertuig(){
+  return voertuigen.find(v=>v.id===settings.actieveVoertuigId)
+    || voertuigen.find(v=>v.kenteken===settings.actieveVoertuigKenteken)
+    || voertuigen[0] || null;
+}
+
+function showPage(id, btn){
+  document.querySelectorAll('.page').forEach(p=>{
+    p.classList.remove('active');
+    p.style.display='none';
+  });
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const pg = document.getElementById('page-'+id);
+  pg.classList.add('active');
+  pg.style.display='block';
+  document.querySelectorAll('.nav-btn[data-page="'+id+'"]').forEach(b=>b.classList.add('active'));
+  if(id==='ritten')    renderRitten();
+  if(id==='locaties')  renderLocaties();
+  if(id==='voertuig')  loadVoertuig();
+  if(id==='instellingen') loadInstellingen();
+  if(id==='overzicht') loadOverzicht();
+  if(id==='verbruik')  loadVerbruik();
+}
+
+let toastTimer;
+function toast(msg){ 
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+function loadVoertuig(){
+  renderVoertuigen();
+}
+function loadInstellingen(){
+  // woon/werk afstand verwijderd
+  const mp = document.getElementById('vt-maxpriv');
+  // woon/werk km niet meer in UI
+  if(mp) mp.value = settings.maxPrivKm||0;
+  // Actief voertuig label in koppeling-kaart
+  const av = getActiefVoertuig();
+  const lbl = document.getElementById('inst-actief-label');
+  if(lbl) lbl.textContent = av ? ([av.merk,av.type].filter(Boolean).join(' ')||av.kenteken||'Onbekend') : 'Geen voertuig';
+}
+
+
+function renderVoertuigen(){
+  const list  = document.getElementById('vt-list');
+  const empty = document.getElementById('vt-empty');
+  if(!voertuigen.length){ list.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  const av = getActiefVoertuig();
+  const bsIcons = {elektrisch:'&#x26A1;',benzine:'&#x26FD;',diesel:'&#x1F6E2;',lpg:'&#x1F535;'};
+  list.innerHTML = voertuigen.map(v=>{
+    const isFav = v.id === av?.id;
+    const label = [v.merk,v.type].filter(Boolean).join(' ') || v.kenteken || 'Naamloos';
+    const kleur = v.kleur||'#475569';
+    const bsTags = (v.brandstof||[]).map(b=>
+      '<span style="font-size:10px;background:#0f172a;border:1px solid #334155;border-radius:4px;padding:1px 5px;color:#64748b">'+(bsIcons[b]||'')+' '+b+'</span>'
+    ).join('');
+    const extraInfo = [
+      v.kenteken ? '<span class="mono" style="font-size:11px;font-weight:700;color:#94a3b8;background:#0f172a;padding:1px 7px;border-radius:5px">'+esc(v.kenteken.toUpperCase())+'</span>' : '',
+      v.beginKm ? fmt(v.beginKm)+' km start' : '',
+      v.bouwjaar ? v.bouwjaar : '',
+    ].filter(Boolean);
+    const techSpecs = [
+      v.massa      ? '⚖ '+fmt(v.massa)+' kg'      : '',
+      v.pk         ? '⚡ '+v.pk+' PK'               : '',
+      v.nm         ? '🔧 '+v.nm+' Nm'               : '',
+      v.nulHonderd ? '🏁 0-100: '+v.nulHonderd+' s' : '',
+    ].filter(Boolean);
+    return '<div class="vt-kaart" style="'+(isFav?'border-left:3px solid var(--clr-accent);padding-left:10px;margin-left:-2px':'')+'">'
+      +'<div class="vt-kleur-dot" style="background:'+kleur+'22;color:'+kleur+'">&#x1F697;</div>'
+      +'<div class="vt-kaart-body">'
+        +'<div style="display:flex;align-items:center;gap:6px">'
+          +(isFav?'<svg width="10" height="10" viewBox="0 0 24 24" fill="#f59e0b" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>':'')
+          +'<span class="vt-kaart-naam" style="color:'+(isFav?'#f1f5f9':'#94a3b8')+'">'+esc(label)+'</span>'
+        +'</div>'
+        +'<div class="vt-kaart-sub" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px">'+extraInfo.join('<span style="color:#334155">·</span>')+'</div>'
+        +(bsTags?'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">'+bsTags+'</div>':'')
+        +(techSpecs.length?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'+techSpecs.map(s=>'<span style="font-size:11px;background:#0f172a;border:1px solid #1e293b;border-radius:4px;padding:2px 7px;color:#94a3b8">'+s+'</span>').join('')+'</div>':'')
+      +'</div>'
+      +'<div class="vt-kaart-acties">'
+        +'<button class="vt-fav-btn" onclick="setActiefVoertuig('+v.id+')" title="Actief voertuig" style="color:'+(isFav?'#f59e0b':'#475569')+'">'
+          +'<svg width="18" height="18" viewBox="0 0 24 24" fill="'+(isFav?'#f59e0b':'none')+'" stroke="'+(isFav?'#f59e0b':'#475569')+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
+        +'</button>'
+        +'<button class="del-btn" onclick="editVoertuig('+v.id+')" title="Aanpassen" style="color:#475569">'
+          +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
+        +'</button>'
+        +'<button class="del-btn" onclick="delVoertuig('+v.id+')" title="Verwijderen">'
+          +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>'
+        +'</button>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function setActiefVoertuig(id){
+  settings.actieveVoertuigId = id;
+  const v = voertuigen.find(x=>x.id===id);
+  settings.actieveVoertuigKenteken = v?.kenteken||null;
+  save();
+  renderVoertuigen();
+  updateTopbar();
+  renderRitten();
+  if(themeSettings.mode === 'voertuig') applyTheme();
+}
+
+function saveVoertuig(){
+  const kenteken = normKenteken(document.getElementById('vt-kenteken').value);
+  const merk     = document.getElementById('vt-merk').value.trim();
+  const type     = document.getElementById('vt-type').value.trim();
+  const beginKm  = parseFloat(document.getElementById('vt-beginkm').value)||0;
+  const brandstof= [...selectedBrandstof];
+  const kleur    = selectedVtKleur || '#f59e0b';
+  if(!kenteken){ toast('⚠ Kenteken is verplicht'); return; }
+  const beginKmEl = document.getElementById('vt-beginkm');
+  if(beginKmEl.value === '' || beginKmEl.value === null){ toast('⚠ Beginstand km is verplicht'); return; }
+  const editId = document.getElementById('vt-edit-id').value;
+  if(editId){
+    const v = voertuigen.find(v=>v.id===parseInt(editId));
+    if(v){
+      v.merk=merk; v.type=type; v.kenteken=kenteken;
+      v.beginKm=beginKm; v.brandstof=brandstof; v.kleur=kleur;
+      const ktEl2 = document.getElementById('vt-kenteken');
+      if(ktEl2.dataset.bouwjaar) v.bouwjaar  = ktEl2.dataset.bouwjaar;
+      if(ktEl2.dataset.massa)    v.massa      = parseInt(ktEl2.dataset.massa)||null;
+      if(ktEl2.dataset.pk)       v.pk         = parseInt(ktEl2.dataset.pk)||null;
+      if(ktEl2.dataset.nm)       v.nm         = parseInt(ktEl2.dataset.nm)||null;
+      v.nulHonderd = parseFloat(document.getElementById('vt-nul-honderd').value)||null;
+    }
+    toast('✓ Voertuig bijgewerkt');
+  } else {
+    const ktEl3 = document.getElementById('vt-kenteken');
+    const bouwjaar = ktEl3.dataset.bouwjaar||'';
+    const ktEl3b = document.getElementById('vt-kenteken');
+    const massa   = ktEl3b.dataset.massa   ? parseInt(ktEl3b.dataset.massa)   : null;
+    const pk      = ktEl3b.dataset.pk      ? parseInt(ktEl3b.dataset.pk)      : null;
+    const nm      = ktEl3b.dataset.nm      ? parseInt(ktEl3b.dataset.nm)      : null;
+    const nulHonderd = parseFloat(document.getElementById('vt-nul-honderd').value)||null;
+    const v = { id:Date.now(), merk, type, kenteken, beginKm, brandstof, kleur, bouwjaar, massa, pk, nm, nulHonderd };
+    voertuigen.push(v);
+    if(voertuigen.length===1){
+      settings.actieveVoertuigId=v.id;
+      settings.actieveVoertuigKenteken=v.kenteken;
+    }
+    toast('✓ Voertuig opgeslagen');
+  }
+  save();
+  cancelEditVoertuig();
+  renderVoertuigen();
+  updateTopbar();
+}
+
+function editVoertuig(id){
+  const v = voertuigen.find(v=>v.id===id);
+  if(!v) return;
+  document.getElementById('vt-edit-id').value  = v.id;
+  document.getElementById('vt-merk').value      = v.merk||'';
+  document.getElementById('vt-type').value      = v.type||'';
+  const ktEl = document.getElementById('vt-kenteken');
+  ktEl.value = v.kenteken ? formatKentekenStr(v.kenteken) : '';
+  document.getElementById('vt-beginkm').value   = v.beginKm||0;
+  loadBrandstofVoertuig(v);
+  loadKleurVoertuig(v);
+  // RDW preview verbergen bij bewerken (al gevuld)
+  document.getElementById('vt-nul-honderd').value = v.nulHonderd||'';
+  document.getElementById('vt-rdw-preview').style.display='none';
+  document.getElementById('vt-rdw-status').textContent='';
+  document.getElementById('vt-form-title').textContent = 'Voertuig aanpassen';
+  document.getElementById('vt-save-label').textContent = 'Wijzigingen opslaan';
+  document.getElementById('vt-cancel-btn').style.display = 'inline-flex';
+  document.getElementById('vt-cancel-btn2').style.display = 'inline-flex';
+  document.getElementById('vt-form-card').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function cancelEditVoertuig(){
+  document.getElementById('vt-edit-id').value   = '';
+  document.getElementById('vt-merk').value      = '';
+  document.getElementById('vt-type').value      = '';
+  document.getElementById('vt-kenteken').value  = '';
+  document.getElementById('vt-beginkm').value   = 0;
+  loadBrandstofVoertuig(null);
+  loadKleurVoertuig(null);
+  document.getElementById('vt-nul-honderd').value = '';
+  document.getElementById('vt-rdw-preview').style.display='none';
+  document.getElementById('vt-rdw-status').textContent='';
+  document.getElementById('vt-rdw-spinner').style.display='none';
+  document.getElementById('vt-form-title').textContent = 'Voertuig toevoegen';
+  document.getElementById('vt-save-label').textContent = 'Voertuig opslaan';
+  document.getElementById('vt-cancel-btn').style.display = 'none';
+  document.getElementById('vt-cancel-btn2').style.display = 'none';
+}
+
+// ── Kenteken helpers ──────────────────────────────────────────────────────────
+// Verwijdert alle niet-alfanumerieke tekens en geeft uppercase terug
+function normKenteken(raw){
+  return (raw||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+}
+
+// Formatteer NL kenteken met streepjes (bijv. AB123C → AB-123-C)
+// Ondersteunt de gangbare Nederlandse kentekenformaten
+function formatKentekenStr(raw){
+  const s = normKenteken(raw);
+  if(!s) return '';
+  // Probeer standaard NL-patronen
+  const patterns = [
+    // Nieuw (2-3-2): AB-123-CD  → maar in NL is dat zeldzaam
+    // Meest voorkomend:
+    [/^([A-Z]{2})(\d{3})([A-Z]{1})$/, '$1-$2-$3'],   // AB-123-C (oud)
+    [/^([A-Z]{1})(\d{3})([A-Z]{2})$/, '$1-$2-$3'],   // A-123-BC
+    [/^([A-Z]{2})(\d{2})([A-Z]{2})$/, '$1-$2-$3'],   // AB-12-CD
+    [/^(\d{2})([A-Z]{2})(\d{2})$/, '$1-$2-$3'],      // 12-AB-34
+    [/^(\d{2})(\d{2})([A-Z]{2})$/, '$1-$2-$3'],      // 12-34-AB
+    [/^([A-Z]{2})(\d{2})(\d{2})$/, '$1-$2-$3'],      // AB-12-34
+    [/^(\d{2})([A-Z]{3})(\d{1})$/, '$1-$2-$3'],      // 12-ABC-3
+    [/^(\d{1})([A-Z]{3})(\d{2})$/, '$1-$2-$3'],      // 1-ABC-23
+    [/^([A-Z]{3})(\d{2})([A-Z]{1})$/, '$1-$2-$3'],   // ABC-12-D (nieuw)
+    [/^([A-Z]{1})(\d{2})([A-Z]{3})$/, '$1-$2-$3'],   // A-12-BCD
+    [/^([A-Z]{3})(\d{1})([A-Z]{2})$/, '$1-$2-$3'],   // ABC-1-DE
+    [/^([A-Z]{2})(\d{1})([A-Z]{3})$/, '$1-$2-$3'],   // AB-1-CDE
+    [/^(\d{3})([A-Z]{2})(\d{1})$/, '$1-$2-$3'],      // 123-AB-4 (nieuw)
+    [/^(\d{1})([A-Z]{2})(\d{3})$/, '$1-$2-$3'],      // 1-AB-234
+  ];
+  for(const [re, fmt] of patterns){
+    if(re.test(s)) return s.replace(re, fmt);
+  }
+  // Geen patroon herkend: geef onbewerkt terug
+  return s;
+}
+
+// Input handler: auto-format tijdens typen
+function onKentekenInput(el){
+  const cur = el.selectionStart;
+  const raw = el.value.toUpperCase().replace(/[^A-Z0-9-]/g,'');
+  el.value = raw;
+  // Streepjes auto-invoegen alleen als we niet aan het verwijderen zijn
+  const clean = normKenteken(raw);
+  if(clean.length >= 4){
+    const fmt = formatKentekenStr(clean);
+    if(fmt && fmt !== raw){
+      el.value = fmt;
+    }
+  }
+  el.style.color = '#f1f5f9';
+  document.getElementById('vt-rdw-status').textContent='';
+  document.getElementById('vt-rdw-preview').style.display='none';
+}
+
+// Blur handler: ophalen RDW data
+function onKentekenBlur(el){
+  const kt = normKenteken(el.value);
+  el.value = formatKentekenStr(kt) || kt;
+  if(kt.length >= 4) haalRdwOp(kt);
+}
+
+// RDW open data ophalen
+let rdwDebounce = null;
+async function haalRdwOp(kenteken){
+  if(!kenteken || kenteken.length < 4) return;
+  // Niet ophalen als we in bewerkingsmodus zijn (voertuig bestaat al)
+  const editId = document.getElementById('vt-edit-id').value;
+  if(editId) return;
+  const spinner = document.getElementById('vt-rdw-spinner');
+  const status  = document.getElementById('vt-rdw-status');
+  const preview = document.getElementById('vt-rdw-preview');
+  spinner.style.display='block';
+  status.textContent='';
+  status.style.color='#64748b';
+  try{
+    const url = 'https://opendata.rdw.nl/resource/m9d7-ebf2.json?kenteken='+encodeURIComponent(kenteken.toUpperCase());
+    const resp = await fetch(url, {signal:AbortSignal.timeout(7000)});
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data = await resp.json();
+    if(!data.length){ status.textContent='⚠ Kenteken niet gevonden in RDW'; status.style.color='#f87171'; preview.style.display='none'; return; }
+    const d = data[0];
+    // Vul velden in
+    const merk  = (d.merk||'').trim();
+    const handelsbenaming = (d.handelsbenaming||'').trim();
+    const kleur = d.eerste_kleur ? rdwKleurNaarHex(d.eerste_kleur) : null;
+    const brandstofRaw = d.brandstof_omschrijving||'';
+    const bouwjaar = d.datum_eerste_toelating ? String(d.datum_eerste_toelating).slice(0,4) : '';
+    const massa = d.massa_rijklaar ? parseInt(d.massa_rijklaar) : null;
+    const kwRaw = d.vermogen_motor_ms ? parseFloat(d.vermogen_motor_ms) : null;
+    const pk    = kwRaw ? Math.round(kwRaw * 1.35962) : null;
+    const nm    = d.maximaal_koppel ? parseInt(d.maximaal_koppel) : null;
+    // Vul formulier in
+    if(merk && !document.getElementById('vt-merk').value) document.getElementById('vt-merk').value = merk;
+    if(handelsbenaming && !document.getElementById('vt-type').value) document.getElementById('vt-type').value = handelsbenaming;
+    if(kleur) { selectedVtKleur=kleur; renderVtKleurSwatches(); document.getElementById('vt-kleur-custom').value=kleur; }
+    // Brandstof detecteren
+    const bsMap = {benzine:'benzine',diesel:'diesel',lpg:'lpg',elektrisch:'elektrisch',cng:'lpg','waterstof':'elektrisch'};
+    const bsKey = Object.keys(bsMap).find(k=>brandstofRaw.toLowerCase().includes(k));
+    if(bsKey && !selectedBrandstof.length) { selectedBrandstof=[bsMap[bsKey]]; renderBrandstofBtns(); }
+    // Preview tonen
+    const velden = [
+      ['Merk',          merk],
+      ['Type',          handelsbenaming],
+      ['Bouwjaar',      bouwjaar],
+      ['Brandstof',     brandstofRaw],
+      ['Kleur',         d.eerste_kleur||''],
+      ['Gewicht',       massa ? fmt(massa)+' kg' : ''],
+      ['Vermogen',      pk    ? pk+' PK ('+(kwRaw?Math.round(kwRaw):'')+'  kW)' : ''],
+      ['Koppel',        nm    ? nm+' Nm' : ''],
+      ['Cilinderinhoud', d.cilinderinhoud ? d.cilinderinhoud+' cc' : ''],
+    ].filter(([,v])=>v);
+    document.getElementById('vt-rdw-velden').innerHTML = velden.map(([k,v])=>
+      '<span style="color:#475569">'+k+'</span><span style="color:#f1f5f9;font-weight:600">'+esc(String(v))+'</span>'
+    ).join('');
+    preview.style.display='block';
+    status.textContent='✓ Gegevens opgehaald via RDW';
+    status.style.color='#34d399';
+    // Sla alle gegevens op in dataset voor gebruik bij save
+    const ktEl = document.getElementById('vt-kenteken');
+    ktEl.dataset.bouwjaar = bouwjaar;
+    ktEl.dataset.massa    = massa||'';
+    ktEl.dataset.pk       = pk||'';
+    ktEl.dataset.nm       = nm||'';
+  }catch(e){
+    if(e.name!=='AbortError'){
+      status.textContent='Geen verbinding — vul gegevens handmatig in';
+      status.style.color='#64748b';
+    }
+    preview.style.display='none';
+  } finally {
+    spinner.style.display='none';
+  }
+}
+
+function rdwKleurNaarHex(kleur){
+  const map = {
+    'wit':'#f8fafc','zwart':'#0f172a','grijs':'#64748b','zilver':'#94a3b8',
+    'blauw':'#3b82f6','rood':'#ef4444','groen':'#22c55e','geel':'#f59e0b',
+    'oranje':'#f97316','bruin':'#92400e','beige':'#d4a574','paars':'#a855f7',
+  };
+  const k = (kleur||'').toLowerCase();
+  for(const [key,val] of Object.entries(map)){ if(k.includes(key)) return val; }
+  return null;
+}
+
+// ── Koppel-functies ───────────────────────────────────────────────────────────
+function koppelRittenZonderVoertuig(){
+  const v = getActiefVoertuig();
+  if(!v){ toast('⚠ Geen actief voertuig'); return; }
+  let n=0;
+  ritten.forEach(r=>{
+    if(!r.voertuigId && !r.voertuigKenteken){
+      r.voertuigId=v.id; r.voertuigKenteken=v.kenteken;
+      r.voertuigLabel=[v.merk,v.type].filter(Boolean).join(' ')||v.kenteken;
+      n++;
+    }
+  });
+  save(); renderRitten();
+  toast('✓ '+n+' rit'+(n!==1?'ten':'')+' gekoppeld aan '+([v.merk,v.type].filter(Boolean).join(' ')||v.kenteken));
+}
+
+function koppelAlleRitten(){
+  const v = getActiefVoertuig();
+  if(!v){ toast('⚠ Geen actief voertuig'); return; }
+  const label = [v.merk,v.type].filter(Boolean).join(' ')||v.kenteken;
+  toonConfirm(
+    'Alle ritten koppelen',
+    'Alle ritten (ook die al aan een ander voertuig gekoppeld zijn) worden aan '+label+' gekoppeld.',
+    'Koppelen','#f59e0b',
+    ()=>{
+      ritten.forEach(r=>{
+        r.voertuigId=v.id; r.voertuigKenteken=v.kenteken;
+        r.voertuigLabel=label;
+      });
+      save(); renderRitten(); toast('✓ Alle '+ritten.length+' ritten gekoppeld aan '+label);
+    }
+  );
+}
+
+function delVoertuig(id){
+  if(voertuigen.length===1){ toast('⚠ Minimaal één voertuig vereist'); return; }
+  voertuigen = voertuigen.filter(v=>v.id!==id);
+  if(settings.actieveVoertuigId===id){
+    settings.actieveVoertuigId = voertuigen[0]?.id||null;
+    settings.actieveVoertuigKenteken = voertuigen[0]?.kenteken||null;
+  }
+  save();
+  renderVoertuigen();
+  updateTopbar();
+  toast('Voertuig verwijderd');
+}
+
+function saveSettings(){
+  // woon/werk km verwijderd uit instellingen
+  settings.maxPrivKm  = parseFloat(document.getElementById('vt-maxpriv').value)||0;
+  save();
+  renderRitten();
+  toast('✓ Instellingen opgeslagen');
+  const btn=document.getElementById('btn-save-vt');
+  btn.textContent='✓ Opgeslagen!';
+  setTimeout(()=>btn.textContent='Opslaan',2000);
+}
+
+// Herberekent ALLE ritten van alle voertuigen volledig opnieuw (vanaf het vroegste punt)
+function herberekeningVoertuig(voertuigId){
+  // Herbereken alle ritten van één voertuig volledig op basis van eindKm - prevKm.
+  // Werkt correct na verwerkGeredenKm: alle eindstanden zijn al bijgesteld,
+  // dus eindKm - prevKm geeft automatisch de juiste afgelegdKm voor elke rit.
+  const vtRitten = ritten
+    .filter(r => r.voertuigId === voertuigId)
+    .sort((a,b) => normLogTijd(a).localeCompare(normLogTijd(b)));
+  vtRitten.forEach(r => {
+    const rlt = normLogTijd(r);
+    const prevKm = getPrevKmForDate(rlt, r.id, voertuigId);
+    const afgelegd = Math.max(0, r.eindKm - prevKm);
+    let werkKm=0, privKm=0;
+    werkKm = r.isWerk ? afgelegd : 0;
+    privKm = Math.round((!r.isWerk ? afgelegd : 0)*10)/10;
+    r.afgelegdKm = afgelegd;
+    r.werkKm = werkKm;
+    r.privKm = privKm;
+  });
+}
+
+function herberekeningAlles(){
+  // Groepeer ritten per voertuig en herbereken elke groep volledig
+  const voertuigIds = [...new Set(ritten.map(r=>r.voertuigId))];
+  voertuigIds.forEach(vtId=>{
+    const vtRitten = ritten
+      .filter(r=>r.voertuigId===vtId)
+      .sort((a,b)=>normLogTijd(a).localeCompare(normLogTijd(b)));
+    vtRitten.forEach(r=>{
+      const rlt = normLogTijd(r);
+      const prevKm = getPrevKmForDate(rlt, r.id, vtId);
+      const afgelegd = Math.max(0, r.eindKm - prevKm);
+      let werkKm=0, privKm=0;
+      werkKm = r.isWerk ? afgelegd : 0;
+      privKm = Math.round((!r.isWerk ? afgelegd : 0)*10)/10;
+      r.afgelegdKm = afgelegd;
+      r.werkKm = werkKm;
+      r.privKm = privKm;
+    });
+  });
+  save();
+  renderRitten();
+  const btn=document.getElementById('btn-herbereken');
+  const origHtml = btn.innerHTML;
+  btn.innerHTML='✓ Herberekend!';
+  setTimeout(()=>btn.innerHTML=origHtml,2000);
+  toast('✓ Alle ritten herberekend met huidige instellingen');
+}
+
+function updateTopbar(){
+  const v = getActiefVoertuig();
+  if(v){
+    const label = [v.merk, v.type].filter(Boolean).join(' ') || v.kenteken || '';
+    document.getElementById('topbar-sub').textContent = label ? '· '+label : '';
+  } else {
+    document.getElementById('topbar-sub').textContent = '';
+  }
+}
+
+// ── Nominatim zoek (NL only) ─────────────────────────────────────────────────
+let nomTimer = null;
+function nomSearch(){
+  const q = document.getElementById('nom-input').value.trim();
+  const list = document.getElementById('nom-list');
+  const status = document.getElementById('nom-status');
+  clearTimeout(nomTimer);
+  if(q.length < 2){ list.style.display='none'; status.textContent=''; return; }
+  nomTimer = setTimeout(async()=>{
+    document.getElementById('nom-spinner').style.display='block';
+    status.textContent='';
+    try{
+      const url = 'https://nominatim.openstreetmap.org/search?format=json&countrycodes=nl&addressdetails=1&limit=8&q='+encodeURIComponent(q);
+      const resp = await fetch(url, {headers:{'Accept-Language':'nl','User-Agent':'KMRegistratieApp/2.0'}});
+      if(!resp.ok) throw new Error('HTTP '+resp.status);
+      const data = await resp.json();
+      list.innerHTML = '';
+      if(!data.length){
+        status.textContent = 'Geen resultaten gevonden';
+        list.style.display='none';
+        return;
+      }
+      data.forEach(item=>{
+        const a = item.address||{};
+        const naam = a.amenity||a.shop||a.office||a.company||a.building||a.leisure||a.tourism
+          || item.display_name.split(',')[0];
+        const pc   = (a.postcode||'').toUpperCase();
+        const pl   = a.city||a.town||a.village||a.municipality||a.county||'';
+        const straat = a.road ? (a.road+(a['house_number']?' '+a['house_number']:'')) : '';
+        const sub  = [pc, pl, straat].filter(Boolean).join(' · ');
+        const div  = document.createElement('div');
+        div.style.cssText='padding:10px 14px;cursor:pointer;border-bottom:1px solid #1e293b;transition:background .12s';
+        div.onmouseover = ()=>div.style.background='#1e293b';
+        div.onmouseout  = ()=>div.style.background='';
+        div.innerHTML = '<div style="font-size:13px;font-weight:600;color:#f1f5f9">'+esc(naam)+'</div>'
+          +'<div style="font-size:11px;color:#64748b;margin-top:2px">'+esc(sub)+'</div>';
+        div.onmousedown = ()=>{
+          document.getElementById('loc-naam').value   = naam;
+          document.getElementById('loc-pc').value     = pc;
+          document.getElementById('loc-plaats').value = pl;
+          document.getElementById('nom-input').value  = '';
+          list.style.display='none';
+          status.textContent = '✓ Geselecteerd: '+naam;
+          status.style.color = '#34d399';
+        };
+        list.appendChild(div);
+      });
+      list.style.display = 'block';
+    }catch(e){
+      status.textContent = 'Geen verbinding — vul handmatig in';
+      status.style.color = '#64748b';
+      list.style.display='none';
+    } finally {
+      document.getElementById('nom-spinner').style.display='none';
+    }
+  }, 350);
+}
+function closeNom(){
+  document.getElementById('nom-list').style.display='none';
+}
+
+// ── CRUD locaties ─────────────────────────────────────────────────────────────
+function saveLocatie(){
+  const naam  = document.getElementById('loc-naam').value.trim();
+  const pc    = document.getElementById('loc-pc').value.trim().toUpperCase();
+  const pl    = document.getElementById('loc-plaats').value.trim();
+  if(!naam||!pc||!pl){ toast('⚠ Vul naam, postcode en plaats in'); return; }
+  const editId = document.getElementById('loc-edit-id').value;
+  if(editId){
+    const l = locaties.find(l=>l.id===parseInt(editId));
+    if(l){ l.naam=naam; l.postcode=pc; l.plaats=pl; }
+    toast('✓ Locatie bijgewerkt');
+  } else {
+    locaties.push({ id:Date.now(), naam, postcode:pc, plaats:pl, favoriet:0 });
+    toast('✓ Locatie opgeslagen');
+  }
+  save();
+  cancelEditLocatie();
+  renderLocaties();
+}
+
+function editLocatie(id){
+  const l = locaties.find(l=>l.id===id);
+  if(!l) return;
+  document.getElementById('loc-edit-id').value  = l.id;
+  document.getElementById('loc-naam').value      = l.naam;
+  document.getElementById('loc-pc').value        = l.postcode;
+  document.getElementById('loc-plaats').value    = l.plaats;
+  document.getElementById('nom-input').value     = '';
+  document.getElementById('nom-list').style.display='none';
+  document.getElementById('nom-status').textContent='';
+  document.getElementById('loc-form-title').textContent = 'Locatie aanpassen';
+  document.getElementById('loc-save-label').textContent = 'Wijzigingen opslaan';
+  document.getElementById('loc-cancel-btn').style.display = 'inline-flex';
+  document.getElementById('loc-form-card').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function cancelEditLocatie(){
+  document.getElementById('loc-edit-id').value   = '';
+  document.getElementById('loc-naam').value       = '';
+  document.getElementById('loc-pc').value         = '';
+  document.getElementById('loc-plaats').value     = '';
+  document.getElementById('nom-input').value      = '';
+  document.getElementById('nom-list').style.display='none';
+  document.getElementById('nom-status').textContent='';
+  document.getElementById('loc-form-title').textContent = 'Locatie toevoegen';
+  document.getElementById('loc-save-label').textContent = 'Locatie opslaan';
+  document.getElementById('loc-cancel-btn').style.display = 'none';
+}
+
+function delLocatie(id){
+  toonConfirm('Locatie verwijderen','Weet u zeker dat u deze locatie wilt verwijderen?','Verwijderen','#f87171',()=>{
+    locaties = locaties.filter(l=>l.id!==id);
+    save(); renderLocaties(); renderLokDropdown(); toast('✓ Locatie verwijderd');
+  });
+}
+
+function toggleFavoriet(id){
+  const l = locaties.find(l=>l.id===id);
+  if(l){ l.favoriet = l.favoriet ? 0 : 1; }
+  save(); renderLocaties();
+}
+
+// ── Export / Import ───────────────────────────────────────────────────────────
+function exportLocaties(){
+  if(!locaties.length){ toast('Geen locaties om te exporteren'); return; }
+  const rows=[['Naam','Postcode','Plaats','Favoriet']];
+  locaties.forEach(l=>rows.push([l.naam, l.postcode, l.plaats, l.favoriet?'1':'0']));
+  const csv = rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download='locaties.csv'; a.click();
+  URL.revokeObjectURL(url);
+  toast('✓ '+locaties.length+' locaties geëxporteerd');
+}
+
+function importLocaties(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const text  = e.target.result.replace(/^﻿/,'');
+      const lines = text.split('\n').map(l=>l.trim()).filter(l=>l);
+      if(lines.length<2){ toast('⚠ CSV lijkt leeg'); return; }
+      const header = parseCSVRow(lines[0]).map(h=>h.trim().toLowerCase());
+      const iN=header.indexOf('naam'), iP=header.indexOf('postcode'),
+            iPl=header.indexOf('plaats'), iF=header.indexOf('favoriet');
+      if(iN===-1||iP===-1||iPl===-1){ toast('⚠ Gebruik een geëxporteerd locaties.csv bestand'); return; }
+      const existing = new Set(locaties.map(l=>l.naam.toLowerCase()+'|'+l.postcode.toLowerCase()));
+      let added=0, dupes=0;
+      for(let i=1;i<lines.length;i++){
+        const cols = parseCSVRow(lines[i]);
+        const naam = (cols[iN]||'').trim();
+        const pc   = (cols[iP]||'').trim().toUpperCase();
+        const pl   = (cols[iPl]||'').trim();
+        if(!naam||!pc||!pl) continue;
+        const key  = naam.toLowerCase()+'|'+pc.toLowerCase();
+        if(existing.has(key)){ dupes++; continue; }
+        const fav  = iF>-1 && cols[iF]==='1' ? 1 : 0;
+        locaties.push({ id:Date.now()+i, naam, postcode:pc, plaats:pl, favoriet:fav });
+        existing.add(key); added++;
+      }
+      save(); renderLocaties(); input.value='';
+      let msg = '✓ '+added+' locatie'+(added!==1?'s':'')+' geïmporteerd';
+      if(dupes) msg += ' ('+dupes+' overgeslagen)';
+      toast(msg);
+    }catch(err){ toast('⚠ Importfout: '+err.message); }
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderLocaties(){
+  const ul     = document.getElementById('loc-list-ul');
+  const empty  = document.getElementById('loc-empty');
+  const titel  = document.getElementById('loc-list-title');
+  const sort   = document.getElementById('loc-sort')?.value || 'fav';
+  const filter = (document.getElementById('loc-filter')?.value||'').toLowerCase().trim();
+
+  let lijst = [...locaties];
+  // Filter
+  if(filter){
+    lijst = lijst.filter(l=>
+      l.naam.toLowerCase().includes(filter) ||
+      l.postcode.toLowerCase().includes(filter) ||
+      l.plaats.toLowerCase().includes(filter)
+    );
+  }
+  // Sorteren
+  lijst.sort((a,b)=>{
+    if(sort==='fav'){
+      const fd = (b.favoriet||0)-(a.favoriet||0);
+      if(fd!==0) return fd;
+      return a.naam.localeCompare(b.naam,'nl');
+    }
+    if(sort==='naam')     return a.naam.localeCompare(b.naam,'nl');
+    if(sort==='plaats')   return a.plaats.localeCompare(b.plaats,'nl');
+    if(sort==='postcode') return a.postcode.localeCompare(b.postcode,'nl');
+    return 0;
+  });
+
+  titel.textContent = 'Opgeslagen locaties ('+locaties.length+')';
+  if(!lijst.length){
+    ul.innerHTML=''; empty.style.display='block'; return;
+  }
+  empty.style.display='none';
+
+  ul.innerHTML = lijst.map(l=>{
+    const favClr = l.favoriet ? '#f59e0b' : '#334155';
+    const favFill= l.favoriet ? '#f59e0b' : 'none';
+    return '<div class="loc-item">'
+      +'<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">'
+        +'<button class="del-btn" onclick="toggleFavoriet('+l.id+')" title="Favoriet" style="color:'+favClr+';flex-shrink:0">'
+          +'<svg width="16" height="16" viewBox="0 0 24 24" fill="'+favFill+'" stroke="'+favClr+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
+        +'</button>'
+        +'<div style="min-width:0">'
+          +'<div class="loc-item-name">'+esc(l.naam)+'</div>'
+          +'<div class="loc-item-sub mono">'+esc(l.postcode)+' · '+esc(l.plaats)+'</div>'
+        +'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:4px;flex-shrink:0">'
+        +'<button class="del-btn" onclick="editLocatie('+l.id+')" title="Bewerken" style="color:#475569">'
+          +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
+        +'</button>'
+        +'<button class="del-btn" onclick="delLocatie('+l.id+')" title="Verwijderen">'
+          +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>'
+        +'</button>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+let ritState = { isWerk:true, selLocId:null, gebruikGereden:false };
+
+
+function toggleSwitch(key){
+  ritState[key]=!ritState[key];
+  const track=document.getElementById('track-'+key);
+  track.classList.toggle('checked', ritState[key]);
+  if(key==='isWerk'){
+    const isW=ritState.isWerk;
+    track.className='toggle-track'+(isW?' checked on-amber':'');
+    document.getElementById('lbl-werk-off').style.color=!isW?'#f87171':'#94a3b8';
+    document.getElementById('lbl-werk-off').style.fontWeight=!isW?'700':'500';
+    document.getElementById('lbl-werk-off').style.setProperty('color',!isW?'#f87171':'#94a3b8');
+    document.getElementById('lbl-werk-on').style.color=isW?'#f59e0b':'#94a3b8';
+    document.getElementById('lbl-werk-on').style.fontWeight=isW?'700':'500';
+    // Gereden km alleen beschikbaar bij Werk
+    const geredenInp = document.getElementById('rit-geredenkm');
+    const geredenWrap = geredenInp ? geredenInp.closest('.field') : null;
+    if(!isW){
+      geredenInp.value = '';
+      ritState.gebruikGereden = false;
+      if(geredenWrap) geredenWrap.style.opacity = '0.35';
+      geredenInp.disabled = true;
+      geredenInp.placeholder = 'Niet beschikbaar bij Privé';
+    } else {
+      if(geredenWrap) geredenWrap.style.opacity = '1';
+      geredenInp.disabled = false;
+      geredenInp.placeholder = 'bijv. 42';
+    }
+  }
+  updatePreview();
+}
+
+
+function updatePreview(){
+  const eindVal=document.getElementById('rit-eindkm').value;
+  const prevKm=getPrevKm();
+  const huidig=parseFloat(eindVal)||0;
+  const afgelegd=Math.max(0,huidig-prevKm);
+  const bar=document.getElementById('preview-bar');
+  if(!eindVal||huidig<=prevKm){ bar.style.display='none'; return; }
+  bar.style.display='flex';
+  let werk=0,priv=0;
+  werk=ritState.isWerk?afgelegd:0;
+  priv=!ritState.isWerk?afgelegd:0;
+  document.getElementById('prev-note').textContent='';
+  document.getElementById('prev-af').textContent=fmt(afgelegd);
+  document.getElementById('prev-werk').textContent=fmt(werk);
+  document.getElementById('prev-priv').textContent=fmtPriv(priv);
+}
+
+function normLogTijd(r){
+  const lt = r.logTijd;
+  if(!lt) return r.datum + 'T00:00';
+  if(/^\d{4}-\d{2}-\d{2}T/.test(lt)) return lt.slice(0,19);
+  const m = lt.match(/(\d{2})-(\d{2})-(\d{4})[\s,]+(\d{2}:\d{2}(:\d{2})?)/);
+  if(m) return `${m[3]}-${m[2]}-${m[1]}T${m[4]}`;
+  return r.datum + 'T00:00';
+}
+
+function getPrevKmForDate(datumTijd, excludeId, voertuigId){
+  const v = voertuigId ? voertuigen.find(v=>v.id===voertuigId) : getActiefVoertuig();
+  const beginKm = v ? (v.beginKm||0) : (parseFloat(settings.beginKm)||0);
+  const vtRitten = (v ? ritten.filter(r=>r.voertuigId===v.id) : ritten)
+    .filter(r=>r.id!==excludeId);
+  const before = vtRitten
+    .filter(r=>normLogTijd(r) < datumTijd)
+    .sort((a,b)=>normLogTijd(a).localeCompare(normLogTijd(b)));
+  return before.length ? before[before.length-1].eindKm : beginKm;
+}
+
+function getPrevKm(){
+  const datum = document.getElementById('rit-datum').value || new Date().toISOString().split('T')[0];
+  const tijd  = document.getElementById('rit-tijd').value || '00:00';
+  return getPrevKmForDate(datum + 'T' + tijd, null, null);
+}
+
+function herbereken(gewijzigdLogTijd, voertuigId){
+  // Herbereken ALLE ritten van dit voertuig chronologisch
+  // zodat afgelegdKm, werkKm en privKm altijd kloppen na elke mutatie
+  const vtRitten = ritten
+    .filter(r=>r.voertuigId===voertuigId)
+    .sort((a,b)=>normLogTijd(a).localeCompare(normLogTijd(b)));
+  vtRitten.forEach(r=>{
+    const rlt = normLogTijd(r);
+    const prevKm = getPrevKmForDate(rlt, r.id, voertuigId);
+    const afgelegd = Math.max(0, r.eindKm - prevKm);
+    let werkKm=0, privKm=0;
+    werkKm = r.isWerk ? afgelegd : 0;
+    privKm = Math.round((!r.isWerk ? afgelegd : 0)*10)/10;
+    r.afgelegdKm = afgelegd;
+    r.werkKm = werkKm;
+    r.privKm = privKm;
+  });
+}
+
+function sortedLocs(filter=''){
+  return locaties
+    .filter(l=>
+      !filter ||
+      l.naam.toLowerCase().includes(filter.toLowerCase())||
+      l.postcode.toLowerCase().includes(filter.toLowerCase())||
+      l.plaats.toLowerCase().includes(filter.toLowerCase())
+    )
+    .sort((a,b)=>(b.favoriet||0)-(a.favoriet||0));
+}
+
+function renderLokDropdown(filter=''){
+  const list=document.getElementById('loc-list-dd');
+  const matches=sortedLocs(filter);
+  if(!matches.length){ list.style.display='none'; return; }
+  list.innerHTML=matches.map(l=>`
+    <div class="dropdown-item" onmousedown="selectLoc(${l.id})">
+      <div style="display:flex;align-items:center;gap:8px">
+        ${l.favoriet?'<svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>':''}
+        <div class="dropdown-item-name">${esc(l.naam)}</div>
+      </div>
+      <div class="dropdown-item-sub mono">${esc(l.postcode)} · ${esc(l.plaats)}</div>
+    </div>`).join('');
+  list.style.display='block';
+}
+function filterLocs(){ renderLokDropdown(document.getElementById('loc-search').value); }
+function openLocDropdown(){ if(locaties.length) renderLokDropdown(document.getElementById('loc-search').value||''); }
+function closeLocDropdown(){ setTimeout(()=>document.getElementById('loc-list-dd').style.display='none',160); }
+
+function selectLoc(id){
+  ritState.selLocId=id;
+  const loc=locaties.find(l=>l.id===id);
+  document.getElementById('loc-search').style.display='none';
+  document.getElementById('loc-list-dd').style.display='none';
+  document.getElementById('loc-selected-pill').style.display='block';
+  document.getElementById('pill-naam').textContent=loc.naam;
+  document.getElementById('pill-sub').textContent=loc.postcode+' · '+loc.plaats;
+  document.getElementById('err-locatie').textContent='';
+}
+function toggleOverigeLoc(){
+  const wrap = document.getElementById('overige-loc-wrap');
+  const btn  = document.getElementById('btn-overige');
+  const open = wrap.style.display === 'none';
+  wrap.style.display = open ? 'block' : 'none';
+  btn.innerHTML = open
+    ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg> Overige locatie sluiten'
+    : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Overige locatie';
+  if(open){
+    clearLoc();
+    ritState.selLocId = null;
+  } else {
+    document.getElementById('overige-naam').value='';
+    document.getElementById('overige-pc').value='';
+    document.getElementById('overige-plaats').value='';
+  }
+}
+
+function getOverigeLoc(){
+  if(document.getElementById('overige-loc-wrap').style.display==='none') return null;
+  const naam  = document.getElementById('overige-naam').value.trim();
+  const pc    = document.getElementById('overige-pc').value.trim();
+  const plaats= document.getElementById('overige-plaats').value.trim();
+  if(!naam && !pc && !plaats) return null;
+  return { naam, postcode:pc, plaats, id:null };
+}
+
+function clearLoc(){
+  ritState.selLocId=null;
+  document.getElementById('loc-search').style.display='block';
+  document.getElementById('loc-search').value='';
+  document.getElementById('loc-selected-pill').style.display='none';
+}
+
+function onEindkmInput(){
+  const v = document.getElementById('rit-eindkm').value;
+  if(v){
+    document.getElementById('rit-geredenkm').value = '';
+    ritState.gebruikGereden = false;
+  }
+}
+function onGeredenkmInput(){
+  const v = document.getElementById('rit-geredenkm').value;
+  if(v){
+    document.getElementById('rit-eindkm').value = '';
+    ritState.gebruikGereden = true;
+  } else {
+    ritState.gebruikGereden = false;
+  }
+}
+
+function verwerkGeredenKm(geredenKm, voertuigId, logTijdNieuw){
+  /*
+   * Spec (geverifieerd aan tabel, invoer 110):
+   *
+   *   WERK-rit:
+   *     eindKm -= eigen afgelegd  (stand schuift, afstand blijft gelijk)
+   *     restKm ongewijzigd — doorgaan
+   *
+   *   PRIVÉ-rit:
+   *     verbruik = min(afgelegd, restKm)
+   *     eindKm  -= verbruik
+   *     restKm  -= verbruik
+   *     → afgelegd kan → 0 → rit wordt verwijderd
+   *
+   * Loop stopt als restKm == 0 of geen ritten meer.
+   * restKm > 0 na afloop → melding.
+   *
+   * Nieuwe rit afstand = hoogste eindstand - eindstand na verwerking laatste werkrit.
+   */
+  const vtRitten = ritten
+    .filter(r => r.voertuigId === voertuigId && normLogTijd(r) < logTijdNieuw)
+    .sort((a,b) => normLogTijd(b).localeCompare(normLogTijd(a)));
+
+  let restKm = Math.round(geredenKm * 10) / 10;
+
+  for(let i = 0; i < vtRitten.length && restKm > 0; i++){
+    const r        = vtRitten[i];
+    const rlt      = normLogTijd(r);
+    const prevKm   = getPrevKmForDate(rlt, r.id, voertuigId);
+    const afgelegd = Math.max(0, Math.round((r.eindKm - prevKm) * 10) / 10);
+
+    if(afgelegd === 0) continue;
+
+    if(r.isWerk){
+      // Werkrit: stand zakt altijd met restKm, afstand blijft gelijk, restKm ongewijzigd
+      r.eindKm = Math.round((r.eindKm - restKm) * 10) / 10;
+    } else {
+      // Privérit: verbruik restKm tot max afgelegd
+      const verbruik = Math.min(afgelegd, restKm);
+      r.eindKm = Math.round((r.eindKm - verbruik) * 10) / 10;
+      restKm   = Math.round((restKm   - verbruik) * 10) / 10;
+    }
+  }
+
+  return restKm > 0;
+}
+
+function addRit(){
+  const datum=document.getElementById('rit-datum').value;
+  const _av = getActiefVoertuig(); if(!_av){ toast('\u26a0 Geen actief voertuig — voeg eerst een voertuig toe'); return; }
+  const eindVal=document.getElementById('rit-eindkm').value;
+  const geredenVal=document.getElementById('rit-geredenkm').value;
+  const gebruikGereden = ritState.gebruikGereden && !!geredenVal;
+  const prevKm=getPrevKm();
+  const huidig = gebruikGereden ? prevKm : (parseFloat(eindVal)||0);
+  let ok=true;
+
+  if(!datum){ ok=false; }
+  if(gebruikGereden){
+    const gereden = parseFloat(geredenVal)||0;
+    if(!gereden || gereden <= 0){
+      document.getElementById('err-eindkm').textContent='Vul een geldig aantal km in';
+      ok=false;
+    } else {
+      document.getElementById('err-eindkm').textContent='';
+    }
+  } else {
+    if(!eindVal||isNaN(huidig)||huidig<prevKm){
+      document.getElementById('err-eindkm').textContent=`moet ≥ ${fmt(prevKm)} km zijn`;
+      document.getElementById('rit-eindkm').classList.add('err');
+      ok=false;
+    } else {
+      document.getElementById('err-eindkm').textContent='';
+      document.getElementById('rit-eindkm').classList.remove('err');
+    }
+  }
+
+  const overige = getOverigeLoc();
+  if(!ritState.selLocId && !overige){
+    document.getElementById('err-locatie').textContent='Selecteer een locatie of vul een overige locatie in';
+    ok=false;
+  } else {
+    document.getElementById('err-locatie').textContent='';
+  }
+  if(!ok) return;
+
+  const geredenKmVal = parseFloat(document.getElementById('rit-geredenkm').value)||0;
+  const avId = getActiefVoertuig()?.id||null;
+
+  // Bij gereden-km modus:
+  // - eindKm nieuwe rit = hoogste eindstand (ongewijzigd)
+  // - afgelegdKm nieuwe rit = afgelegd van de eerstvolgende werkrit eronder
+  //   (die werkrit zakt met zijn eigen afgelegd, nieuwe rit neemt die afstand over)
+  let eindKmNieuw, afgelegd;
+  if(gebruikGereden){
+    const gesorteerd = ritten
+      .filter(r => r.voertuigId === avId)
+      .sort((a,b) => normLogTijd(b).localeCompare(normLogTijd(a)));
+    hoogsteEindKm = gesorteerd.length ? gesorteerd[0].eindKm : prevKm;
+    const eersteWerk = gesorteerd.find(r => r.isWerk);
+    const eersteWerkAfgelegd = eersteWerk
+      ? Math.max(0, Math.round((eersteWerk.eindKm - getPrevKmForDate(normLogTijd(eersteWerk), eersteWerk.id, avId)) * 10) / 10)
+      : geredenKmVal;
+    eindKmNieuw = hoogsteEindKm;
+    afgelegd    = eersteWerkAfgelegd;
+  } else {
+    eindKmNieuw = huidig;
+    afgelegd    = huidig - prevKm;
+  }
+  let werkKm=0,privKm=0;
+  werkKm=ritState.isWerk?afgelegd:0;
+  privKm=!ritState.isWerk?afgelegd:0;
+  privKm=Math.round(privKm*10)/10;
+
+  const loc = overige || locaties.find(l=>l.id===ritState.selLocId);
+  const opmerking = document.getElementById('rit-opmerking').value.trim();
+  const av = getActiefVoertuig();
+  ritten.push({
+    id:Date.now(), datum, eindKm:eindKmNieuw,
+    voertuigId: av?.id||null,
+    voertuigLabel: av ? ([av.merk,av.type].filter(Boolean).join(' ')||av.kenteken||'') : '',
+    voertuigKenteken: av?.kenteken||'',
+    locatieId: loc.id||null, locatieNaam:loc.naam, locatiePostcode:loc.postcode, locatiePlaats:loc.plaats,
+    isWerk:ritState.isWerk,
+    afgelegdKm:afgelegd, werkKm, privKm, opmerking,
+    logTijd: (()=>{
+      const d = document.getElementById('rit-datum').value;
+      const t = document.getElementById('rit-tijd').value || new Date().toTimeString().slice(0,8);
+      return d + 'T' + t;
+    })()
+  });
+  const nieuweLt = ritten[ritten.length-1].logTijd;
+  if(gebruikGereden && geredenKmVal > 0){
+    // Stap 1: pas eindstanden aan in vorige ritten
+    const restKmOver = verwerkGeredenKm(geredenKmVal, av?.id||null, nieuweLt);
+    // Stap 2: herbereken afgelegdKm/werkKm/privKm
+    herberekeningVoertuig(av?.id||null);
+    // Stap 3: verwijder ritten met 0 gereden km (volledig geabsorbeerd)
+    const vtId = av?.id||null;
+    ritten = ritten.filter(r => !(r.voertuigId === vtId && (r.afgelegdKm||0) === 0 && normLogTijd(r) < nieuweLt));
+    // Stap 4: melding als niet alle km verwerkt konden worden
+    if(restKmOver) toast('⚠ Niet alle gereden km konden worden verrekend — geen privé ritten meer beschikbaar');
+  } else {
+    herbereken(nieuweLt, av?.id||null);
+  }
+  save();
+
+  document.getElementById('rit-eindkm').value='';
+  document.getElementById('rit-geredenkm').value='';
+  document.getElementById('rit-opmerking').value='';
+  document.getElementById('rit-datum').value = new Date().toISOString().split('T')[0];
+  document.getElementById('rit-tijd').value  = new Date().toTimeString().slice(0,8);
+  document.getElementById('preview-bar').style.display='none';
+  clearLoc();
+  ritState.isWerk=true; ritState.gebruikGereden=false;
+  document.getElementById('track-isWerk').className='toggle-track checked on-amber';
+  document.getElementById('lbl-werk-on').style.color='#f59e0b';
+  document.getElementById('lbl-werk-off').style.color='#94a3b8';
+  document.getElementById('overige-naam').value='';
+  document.getElementById('overige-pc').value='';
+  document.getElementById('overige-plaats').value='';
+  document.getElementById('overige-loc-wrap').style.display='none';
+  document.getElementById('btn-overige').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Overige locatie';
+
+  renderRitten();
+  toast('✓ Rit opgeslagen');
+}
+
+function renderRitten(){
+  const _banner=document.getElementById('geen-voertuig-banner'); if(_banner) _banner.style.display=voertuigen.length?'none':'flex';
+  updateStats();
+  buildYearFilter();
+  renderTabel();
+}
+
+function updateStats(){
+  const yr=new Date().getFullYear();
+  const yrRitten=ritten.filter(r=>new Date(r.datum).getFullYear()===yr);
+  const totalPriv=yrRitten.reduce((s,r)=>s+(r.privKm||0),0);
+  const stand=getPrevKm();
+  document.getElementById('stat-priv').textContent=fmtPriv(totalPriv)+' km';
+  document.getElementById('stat-stand').textContent=fmt(stand)+' km';
+  document.getElementById('stat-ritten').textContent=yrRitten.length;
+  renderDonut(totalPriv, yr);
+}
+
+function renderDonut(used, yr){
+  const max=parseFloat(settings.maxPrivKm)||0;
+  const wrap=document.getElementById('priv-chart-wrap');
+  if(!max){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+
+  const now=new Date();
+  const isHuidigJaar=yr===now.getFullYear();
+  const daysInYear=((yr%4===0&&yr%100!==0)||yr%400===0)?366:365;
+  const dayOfYear=isHuidigJaar
+    ? Math.floor((now - new Date(yr,0,1)) / 86400000)+1
+    : daysInYear;
+  const kmPerDag=max/daysInYear;
+  const verwacht=kmPerDag*dayOfYear;
+  const pct=Math.min(1,used/max);
+  const verschil=used-verwacht;
+  const over=used>max;
+
+  let color;
+  if(over){ color='#f87171'; }
+  else if(verschil>kmPerDag*7){ color='#f87171'; }
+  else if(verschil>kmPerDag*3){ color='#fb923c'; }
+  else if(verschil>0){ color='#f59e0b'; }
+  else { color='#34d399'; }
+
+  const resterend=Math.max(0,max-used);
+  const dagResterend=isHuidigJaar ? Math.max(1, daysInYear-dayOfYear) : 0;
+  const nogPerDag=dagResterend>0 ? resterend/dagResterend : 0;
+
+  document.getElementById('donut-jaar').textContent=yr;
+  document.getElementById('donut-used').textContent=fmt(used)+' km';
+  document.getElementById('donut-used').style.color=color;
+  document.getElementById('donut-max').textContent=fmt(max)+' km';
+  document.getElementById('donut-bar').style.width=(Math.min(pct,1)*100)+'%';
+  document.getElementById('donut-bar').style.background=color;
+  document.getElementById('donut-pct').textContent=Math.round(pct*100)+'%';
+  document.getElementById('donut-pct').style.color=color;
+
+  let statusTekst='';
+  if(over){ statusTekst=`⚠ ${fmt(Math.round(used-max))} km over jaarlimiet`; }
+  else if(isHuidigJaar){
+    if(verschil>0){ statusTekst=`↑ ${fmt(Math.round(verschil))} km boven dagtempo (${verschil>0?'+':''}${(verschil/kmPerDag).toFixed(1)} dagen)`; }
+    else { statusTekst=`✓ ${fmt(Math.round(Math.abs(verschil)))} km onder dagtempo — nog ${fmt(Math.round(nogPerDag))} km/dag beschikbaar`; }
+  } else { statusTekst=`Nog ${fmt(resterend)} km over`; }
+  document.getElementById('donut-resterend').textContent=statusTekst;
+  document.getElementById('donut-resterend').style.color=over||verschil>0?color:'#64748b';
+
+  const paceEl=document.getElementById('donut-pace');
+  if(paceEl && isHuidigJaar){
+    paceEl.textContent=`Budget: ${kmPerDag.toFixed(1)} km/dag · Verwacht t/m vandaag: ${fmt(Math.round(verwacht))} km`;
+  }
+
+  const canvas=document.getElementById('donut-canvas');
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=130*dpr; canvas.height=130*dpr;
+  canvas.style.width='130px'; canvas.style.height='130px';
+  ctx.scale(dpr,dpr);
+
+  const cx=65, cy=65, r=52, lw=13;
+  const startAngle=-Math.PI/2;
+  const endAngle=startAngle+(2*Math.PI*Math.min(pct,1));
+
+  if(isHuidigJaar && verwacht>0 && verwacht<max){
+    const verwachtPct=Math.min(1,verwacht/max);
+    const verwachtEnd=startAngle+(2*Math.PI*verwachtPct);
+    ctx.beginPath();
+    ctx.arc(cx,cy,r,startAngle,verwachtEnd);
+    ctx.strokeStyle='#2d3f55';
+    ctx.lineWidth=lw;
+    ctx.lineCap='round';
+    ctx.stroke();
+  }
+
+  ctx.beginPath();
+  ctx.arc(cx,cy,r,0,2*Math.PI);
+  ctx.strokeStyle='#1e293b';
+  ctx.lineWidth=lw;
+  ctx.stroke();
+
+  if(pct>0){
+    ctx.beginPath();
+    ctx.arc(cx,cy,r,startAngle,endAngle);
+    ctx.strokeStyle=color;
+    ctx.lineWidth=lw;
+    ctx.lineCap='round';
+    ctx.stroke();
+  }
+
+  ctx.fillStyle=color;
+  ctx.font=`700 15px -apple-system,sans-serif`;
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillText(Math.round(pct*100)+'%', cx, cy-8);
+  ctx.fillStyle='#64748b';
+  ctx.font='11px -apple-system,sans-serif';
+  ctx.fillText('privé', cx, cy+10);
+}
+
+function buildYearFilter(){
+  const sel=document.getElementById('filter-jaar');
+  const jaren=[...new Set(ritten.map(r=>new Date(r.datum).getFullYear()))].sort((a,b)=>b-a);
+  const yr=new Date().getFullYear();
+  if(!jaren.includes(yr)) jaren.unshift(yr);
+  const cur=parseInt(sel.value)||yr;
+  sel.innerHTML=jaren.map(j=>`<option value="${j}"${j===cur?' selected':''}>${j}</option>`).join('');
+}
+
+function renderTabel(){
+  const yr=parseInt(document.getElementById('filter-jaar').value)||new Date().getFullYear();
+  const filtered=[...ritten].filter(r=>new Date(r.datum).getFullYear()===yr).sort((a,b)=>{
+    return normLogTijd(b).localeCompare(normLogTijd(a));
+  });
+  const tbody=document.getElementById('rit-tbody');
+  const tfoot=document.getElementById('rit-tfoot');
+  const empty=document.getElementById('rit-empty');
+  const table=document.getElementById('rit-table');
+
+  if(!filtered.length){
+    tbody.innerHTML=''; tfoot.innerHTML='';
+    table.style.display='none'; empty.style.display='block'; return;
+  }
+  table.style.display=''; empty.style.display='none';
+
+  tbody.innerHTML=filtered.map((r,i)=>`
+    <tr style="${i%2?'background:rgba(15,23,42,.35)':''}">
+      <td class="mono" style="color:#94a3b8;white-space:nowrap">${r.datum}</td>
+      <td style="white-space:nowrap">
+        ${r.voertuigLabel?`<div style="font-size:11px;color:#94a3b8;font-weight:500">${esc(r.voertuigLabel)}</div>`:''}
+        ${r.voertuigKenteken?`<div class="mono" style="font-size:10px;color:#475569">${esc(r.voertuigKenteken)}</div>`:'<div style="font-size:11px;color:#334155">—</div>'}
+      </td>
+      <td class="mono" style="color:#f1f5f9">${fmt(r.eindKm)}</td>
+      <td>
+        <div style="font-size:13px;color:#f1f5f9;font-weight:500">${esc(r.locatieNaam)}</div>
+        <div class="mono" style="font-size:11px;color:#475569">${esc(r.locatiePostcode)} · ${esc(r.locatiePlaats)}</div>
+        ${r.opmerking?`<div style="font-size:11px;color:#64748b;margin-top:2px;font-style:italic">${esc(r.opmerking)}</div>`:''}
+      </td>
+      <td><span class="badge ${r.isWerk?'badge-werk':'badge-priv'}">${r.isWerk?'Werk':'Privé'}</span></td>
+      <td class="mono text-right">${fmt(r.afgelegdKm)}</td>
+      <td class="mono text-right" style="color:#34d399">${fmt(r.werkKm||0)}</td>
+      <td class="mono text-right" style="color:#f87171">${fmtPriv(r.privKm||0)}</td>
+      <td style="white-space:nowrap">
+        <button class="del-btn" ontouchend="openEditModal(${r.id})" onclick="openEditModal(${r.id})" title="Aanpassen" style="color:#475569">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="del-btn" ontouchend="delRit(${r.id})" onclick="delRit(${r.id})" title="Verwijderen">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+        </button>
+      </td>
+    </tr>`).join('');
+
+  const totW=filtered.reduce((s,r)=>s+(r.werkKm||0),0);
+  const totP=filtered.reduce((s,r)=>s+(r.privKm||0),0);
+  const totA=filtered.reduce((s,r)=>s+(r.afgelegdKm||0),0);
+  tfoot.innerHTML=`<tr>
+    <td colspan="5" style="color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.08em">Totaal ${yr}</td>
+    <td class="mono text-right" style="color:#f1f5f9">${fmt(totA)}</td>
+    <td class="mono text-right" style="color:#34d399">${fmt(totW)}</td>
+    <td class="mono text-right" style="color:#f87171">${fmtPriv(totP)}</td>
+    <td></td>
+  </tr>`;
+}
+
+function delRit(id){
+  const r = ritten.find(r=>r.id===id);
+  const voertuigId = r?.voertuigId||null;
+  ritten=ritten.filter(r=>r.id!==id);
+  herbereken(null, voertuigId);
+  save();
+  renderRitten();
+  toast('Rit verwijderd');
+}
+
+let editId = null;
+let editLocId = null;
+
+function openEditModal(id){
+  const r = ritten.find(r=>r.id===id);
+  if(!r) return;
+  editId = id;
+  editLocId = r.locatieId||null;
+
+  const vtSel = document.getElementById('edit-voertuig');
+  vtSel.innerHTML='<option value="">— geen voertuig —</option>';
+  voertuigen.forEach(v=>{
+    const label=[v.merk,v.type].filter(Boolean).join(' ')||v.kenteken||'Voertuig';
+    const opt=document.createElement('option');
+    opt.value=v.id; opt.textContent=label+(v.kenteken?' ('+v.kenteken+')':'');
+    vtSel.appendChild(opt);
+  });
+  vtSel.value = r.voertuigId||'';
+
+  document.getElementById('edit-datum').value    = r.datum;
+  document.getElementById('edit-tijd').value     = r.logTijd ? r.logTijd.slice(11,19) : new Date().toTimeString().slice(0,8);
+  document.getElementById('edit-eindkm').value   = r.eindKm;
+  document.getElementById('edit-opmerking').value= r.opmerking||'';
+
+  if(r.locatieId && locaties.find(l=>l.id===r.locatieId)){
+    document.getElementById('edit-loc-search').style.display='none';
+    document.getElementById('edit-loc-pill').style.display='block';
+    document.getElementById('edit-pill-naam').textContent = r.locatieNaam;
+    document.getElementById('edit-pill-sub').textContent  = (r.locatiePostcode||'') + ' · ' + (r.locatiePlaats||'');
+    document.getElementById('edit-overige-wrap').style.display='none';
+    document.getElementById('edit-btn-overige').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Overige locatie';
+  } else if(!r.locatieId && r.locatieNaam){
+    document.getElementById('edit-loc-search').style.display='block';
+    document.getElementById('edit-loc-search').value='';
+    document.getElementById('edit-loc-pill').style.display='none';
+    document.getElementById('edit-overige-wrap').style.display='block';
+    document.getElementById('edit-overige-naam').value  = r.locatieNaam||'';
+    document.getElementById('edit-overige-pc').value    = r.locatiePostcode||'';
+    document.getElementById('edit-overige-plaats').value= r.locatiePlaats||'';
+    document.getElementById('edit-btn-overige').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg> Overige locatie sluiten';
+  } else {
+    document.getElementById('edit-loc-search').style.display='block';
+    document.getElementById('edit-loc-search').value='';
+    document.getElementById('edit-loc-pill').style.display='none';
+    document.getElementById('edit-overige-wrap').style.display='none';
+    document.getElementById('edit-btn-overige').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Overige locatie';
+  }
+
+  const isW = r.isWerk;
+  document.getElementById('edit-track-isWerk').className  = 'toggle-track'+(isW?' checked on-amber':'');
+  document.getElementById('edit-lbl-werk-on').style.color  = isW?'#f59e0b':'#94a3b8';
+  document.getElementById('edit-lbl-werk-off').style.color = !isW?'#f87171':'#94a3b8';
+
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function closeEditModal(e){
+  if(e && e.target !== document.getElementById('edit-modal')) return;
+  document.getElementById('edit-modal').classList.remove('open');
+  editId = null;
+}
+
+function toggleEditOverige(){
+  const wrap = document.getElementById('edit-overige-wrap');
+  const btn  = document.getElementById('edit-btn-overige');
+  const open = wrap.style.display === 'none';
+  wrap.style.display = open ? 'block' : 'none';
+  btn.innerHTML = open
+    ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg> Overige locatie sluiten'
+    : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Overige locatie';
+  if(open) clearEditLoc();
+}
+
+function clearEditLoc(){
+  editLocId = null;
+  document.getElementById('edit-loc-search').style.display='block';
+  document.getElementById('edit-loc-search').value='';
+  document.getElementById('edit-loc-pill').style.display='none';
+}
+
+function filterEditLocs(){
+  const q = document.getElementById('edit-loc-search').value;
+  const list = document.getElementById('edit-loc-list-dd');
+  const matches = sortedLocs(q);
+  if(!matches.length){ list.style.display='none'; return; }
+  list.innerHTML = matches.map(l=>`
+    <div class="dropdown-item" onmousedown="selectEditLoc(${l.id})">
+      <div style="display:flex;align-items:center;gap:8px">
+        ${l.favoriet?'<svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>':''}
+        <div class="dropdown-item-name">${esc(l.naam)}</div>
+      </div>
+      <div class="dropdown-item-sub mono">${esc(l.postcode)} · ${esc(l.plaats)}</div>
+    </div>`).join('');
+  list.style.display='block';
+}
+function openEditLocDropdown(){ filterEditLocs(); }
+function closeEditLocDropdown(){ setTimeout(()=>document.getElementById('edit-loc-list-dd').style.display='none',160); }
+
+function selectEditLoc(id){
+  editLocId = id;
+  const loc = locaties.find(l=>l.id===id);
+  document.getElementById('edit-loc-search').style.display='none';
+  document.getElementById('edit-loc-list-dd').style.display='none';
+  document.getElementById('edit-loc-pill').style.display='block';
+  document.getElementById('edit-pill-naam').textContent = loc.naam;
+  document.getElementById('edit-pill-sub').textContent  = loc.postcode+' · '+loc.plaats;
+}
+
+function toggleEditSwitch(key){
+  const track = document.getElementById('edit-track-'+key);
+  const isOn  = track.classList.contains('checked');
+  track.className = 'toggle-track'+(!isOn?' checked on-amber':'');
+  if(key==='isWerk'){
+    const now=!isOn;
+    document.getElementById('edit-lbl-werk-on').style.color  = now?'#f59e0b':'#94a3b8';
+    document.getElementById('edit-lbl-werk-off').style.color = !now?'#f87171':'#94a3b8';
+  }
+}
+
+function setEditRichting(r){
+  // setEditRichting verwijderd
+}
+
+function saveEditRit(){
+  const idx = ritten.findIndex(r=>r.id===editId);
+  if(idx===-1) return;
+
+  const datum    = document.getElementById('edit-datum').value;
+  const tijd     = document.getElementById('edit-tijd').value || new Date().toTimeString().slice(0,8);
+  const eindKm   = parseFloat(document.getElementById('edit-eindkm').value)||0;
+  const opmerking= document.getElementById('edit-opmerking').value.trim();
+  const logTijd  = datum + 'T' + tijd;
+  if(!datum||!eindKm){ toast('⚠ Vul datum en eindstand in'); return; }
+
+  const isWerk  = document.getElementById('edit-track-isWerk').classList.contains('checked');
+
+  const vtId  = document.getElementById('edit-voertuig').value;
+  const vtObj = vtId ? voertuigen.find(v=>String(v.id)===String(vtId)) : null;
+  const voertuigId       = vtObj?.id||null;
+  const voertuigLabel    = vtObj ? ([vtObj.merk,vtObj.type].filter(Boolean).join(' ')||vtObj.kenteken||'') : '';
+  const voertuigKenteken = vtObj?.kenteken||'';
+
+  let locatieId, locatieNaam, locatiePostcode, locatiePlaats;
+  const ovWrap = document.getElementById('edit-overige-wrap');
+  if(ovWrap.style.display !== 'none'){
+    locatieId=null;
+    locatieNaam    = document.getElementById('edit-overige-naam').value.trim();
+    locatiePostcode= document.getElementById('edit-overige-pc').value.trim();
+    locatiePlaats  = document.getElementById('edit-overige-plaats').value.trim();
+  } else if(editLocId){
+    const loc = locaties.find(l=>l.id===editLocId);
+    locatieId=loc?.id||null; locatieNaam=loc?.naam||''; locatiePostcode=loc?.postcode||''; locatiePlaats=loc?.plaats||'';
+  } else {
+    locatieId=ritten[idx].locatieId; locatieNaam=ritten[idx].locatieNaam;
+    locatiePostcode=ritten[idx].locatiePostcode; locatiePlaats=ritten[idx].locatiePlaats;
+  }
+
+  const prevKm = getPrevKmForDate(logTijd, editId, voertuigId);
+  const afgelegd = Math.max(0, eindKm - prevKm);
+  let werkKm=0, privKm=0;
+  werkKm = isWerk ? afgelegd : 0;
+  privKm = Math.round((!isWerk ? afgelegd : 0)*10)/10;
+
+  ritten[idx] = {
+    ...ritten[idx],
+    datum, eindKm, isWerk,
+    voertuigId, voertuigLabel, voertuigKenteken,
+    locatieId, locatieNaam, locatiePostcode, locatiePlaats,
+    afgelegdKm: afgelegd, werkKm, privKm, opmerking, logTijd,
+  };
+  herbereken(logTijd, voertuigId);
+  save();
+  renderRitten();
+  document.getElementById('edit-modal').classList.remove('open');
+  toast('✓ Rit aangepast');
+}
+
+function exportVoertuigen(){
+  if(!voertuigen.length){ toast('Geen voertuigen om te exporteren'); return; }
+  const rows=[['Kenteken','Merk','Type','BeginKm','Brandstof','Kleur','Bouwjaar']];
+  voertuigen.forEach(v=>rows.push([
+    v.kenteken||'', v.merk||'', v.type||'',
+    v.beginKm||0,
+    (v.brandstof||[]).join(';'),
+    v.kleur||'',
+    v.bouwjaar||''
+  ]));
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='voertuigen.csv'; a.click();
+  URL.revokeObjectURL(url);
+  toast('\u2713 '+voertuigen.length+' voertuig'+(voertuigen.length!==1?'en':'')+' ge\xebxporteerd');
+}
+
+function importVoertuigen(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const text=e.target.result.replace(/^\uFEFF/,'');
+      const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+      if(lines.length<2){ toast('\u26a0 CSV lijkt leeg'); return; }
+      const sep=lines[0].split(';').length>lines[0].split(',').length?';':',';
+      const parseRow=row=>parseCSVRowSep(row,sep);
+      const header=parseRow(lines[0]).map(h=>h.trim().toLowerCase());
+      const col=names=>{ for(const n of names){ const i=header.indexOf(n); if(i>-1) return i; } return -1; };
+      const iKen  =col(['kenteken','license','plate']);
+      const iMerk =col(['merk','brand','make']);
+      const iType =col(['type','model']);
+      const iBegin=col(['beginKm','beginkm','begin km','start km']);
+      const iBrand=col(['brandstof','fuel','fuel type']);
+      const iKleur=col(['kleur','color','colour']);
+      const iBj   =col(['bouwjaar','year','bj']);
+      if(iKen===-1){ toast('\u26a0 Kolom "Kenteken" niet gevonden'); return; }
+      let added=0, dupes=0;
+      const existing=new Set(voertuigen.map(v=>(v.kenteken||'').toUpperCase()));
+      for(let i=1;i<lines.length;i++){
+        const cols=parseRow(lines[i]);
+        const ken=(cols[iKen]||'').trim().toUpperCase();
+        if(!ken) continue;
+        if(existing.has(ken)){ dupes++; continue; }
+        voertuigen.push({
+          id:Date.now()+i,
+          kenteken:ken,
+          merk:iMerk>-1?(cols[iMerk]||'').trim():'',
+          type:iType>-1?(cols[iType]||'').trim():'',
+          beginKm:iBegin>-1?parseFloat((cols[iBegin]||'0').replace(',','.'))||0:0,
+          brandstof:iBrand>-1&&cols[iBrand]?cols[iBrand].split(';').map(s=>s.trim()).filter(Boolean):[],
+          kleur:iKleur>-1?(cols[iKleur]||'#f59e0b').trim():'#f59e0b',
+          bouwjaar:iBj>-1?(cols[iBj]||'').trim():''
+        });
+        existing.add(ken); added++;
+      }
+      if(!settings.actieveVoertuigId && voertuigen.length>0)
+        setActiefVoertuig(voertuigen[0].id);
+      save(); renderVoertuigen(); updateTopbar(); input.value='';
+      let msg='\u2713 '+added+' voertuig'+(added!==1?'en':'')+' ge\xefmporteerd';
+      if(dupes) msg+=' ('+dupes+' overgeslagen)';
+      toast(msg);
+    }catch(err){ toast('\u26a0 Importfout: '+err.message); }
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function exportVerbruik(){
+  if(!verbruiken.length){ toast('Geen verbruik om te exporteren'); return; }
+  const rows=[['Datum','Tijd','Kenteken','Voertuig','KmStand','Hoeveelheid','PrijsPerE','Prijs','Type','Vol','Opmerking']];
+  verbruiken.forEach(v=>rows.push([
+    v.datum||'', v.tijd||'',
+    v.voertuigKenteken||'', v.voertuigLabel||'',
+    v.km||0, v.hoeveelheid||0, v.prijsPerE||0, v.prijs||0,
+    v.type||'', v.vol?'1':'0', v.opmerking||''
+  ]));
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='verbruik.csv'; a.click();
+  URL.revokeObjectURL(url);
+  toast('\u2713 '+verbruiken.length+' verbruikregistratie'+(verbruiken.length!==1?'s':'')+' ge\xebxporteerd');
+}
+
+function importVerbruik(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const text=e.target.result.replace(/^\uFEFF/,'');
+      const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+      if(lines.length<2){ toast('\u26a0 CSV lijkt leeg'); return; }
+      const sep=lines[0].split(';').length>lines[0].split(',').length?';':',';
+      const parseRow=row=>parseCSVRowSep(row,sep);
+      const header=parseRow(lines[0]).map(h=>h.trim().toLowerCase());
+      const col=names=>{ for(const n of names){ const i=header.indexOf(n); if(i>-1) return i; } return -1; };
+      const iDatum =col(['datum','date']);
+      const iTijd  =col(['tijd','time']);
+      const iKen   =col(['kenteken','license','plate']);
+      const iVoert =col(['voertuig','vehicle']);
+      const iKm    =col(['kmstand','km stand','kilometerstand','km']);
+      const iHoev  =col(['hoeveelheid','amount','quantity']);
+      const iPPE   =col(['prijspere','prijs per e','prijs pereenheid','price per unit']);
+      const iPrijs =col(['prijs','price','total']);
+      const iType  =col(['type','fuel type','brandstof']);
+      const iVol   =col(['vol','full']);
+      const iOpme  =col(['opmerking','note','comment']);
+      if(iDatum===-1){ toast('\u26a0 Kolom "Datum" niet gevonden'); return; }
+      const parseNum=v=>parseFloat((v||'').replace(',','.').replace(/[^0-9.\-]/g,''))||0;
+      const vtLookup={};
+      voertuigen.forEach(v=>{ if(v.kenteken) vtLookup[v.kenteken.toUpperCase()]=v; });
+      let added=0;
+      const ts=Date.now();
+      for(let i=1;i<lines.length;i++){
+        const cols=parseRow(lines[i]);
+        if(cols.length<2) continue;
+        const ken  =iKen>-1?(cols[iKen]||'').toUpperCase():'';
+        const vtObj=vtLookup[ken];
+        verbruiken.push({
+          id:ts+i,
+          datum:iDatum>-1?cols[iDatum]||'':'',
+          tijd:iTijd>-1?cols[iTijd]||'':'',
+          km:parseNum(iKm>-1?cols[iKm]:''),
+          hoeveelheid:parseNum(iHoev>-1?cols[iHoev]:''),
+          prijsPerE:parseNum(iPPE>-1?cols[iPPE]:''),
+          prijs:parseNum(iPrijs>-1?cols[iPrijs]:''),
+          type:iType>-1?(cols[iType]||'').toLowerCase():'overig',
+          vol:iVol>-1?cols[iVol]==='1':false,
+          opmerking:iOpme>-1?cols[iOpme]||'':'',
+          voertuigKenteken:vtObj?vtObj.kenteken:ken,
+          voertuigLabel:vtObj?([vtObj.merk,vtObj.type].filter(Boolean).join(' ')||vtObj.kenteken||''):(iVoert>-1?cols[iVoert]||'':''),
+        });
+        added++;
+      }
+      if(!added){ toast('\u26a0 Geen geldige rijen gevonden'); return; }
+      save(); renderVerbruik(); bouwVbVoertuigFilter(); input.value='';
+      toast('\u2713 '+added+' verbruikregistratie'+(added!==1?'s':'')+' ge\xefmporteerd');
+    }catch(err){ toast('\u26a0 Importfout: '+err.message); }
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function exportCSV(){
+  const yr=parseInt(document.getElementById('filter-jaar').value)||new Date().getFullYear();
+  const filtered=ritten.filter(r=>new Date(r.datum).getFullYear()===yr);
+  if(!filtered.length){ toast('Geen ritten om te exporteren'); return; }
+  const rows=[['Datum','Voertuig','Kenteken','Eindstand km','Locatie','Postcode','Plaats','Soort','Totaal km','Werk km','Privé km','Opmerking','Gelogd op']];
+  filtered.forEach(r=>rows.push([
+    r.datum, r.voertuigLabel||'', r.voertuigKenteken||'',
+    r.eindKm, r.locatieNaam, r.locatiePostcode, r.locatiePlaats,
+    r.isWerk?'Werk':'Privé',
+    r.afgelegdKm, r.werkKm||0, r.privKm||0, r.opmerking||'',
+    r.logTijd ? r.logTijd.replace('T',' ') : ''
+  ]));
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`km-registratie-${yr}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  toast('✓ CSV gedownload');
+}
+
+function importCSV(input){
+  const file=input.files[0];
+  if(!file){ return; }
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const text=e.target.result.replace(/^\uFEFF/,'');
+      // Splits op \r\n of \n, verwijder lege regels
+      const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+      if(lines.length<2){ toast('⚠ CSV lijkt leeg'); return; }
+
+      // Auto-detecteer scheidingsteken: ; (NL Excel) of , (standaard)
+      const sep = lines[0].split(';').length > lines[0].split(',').length ? ';' : ',';
+      const parseRow = row => parseCSVRowSep(row, sep);
+
+      const header=parseRow(lines[0]).map(h=>h.trim().toLowerCase());
+      const col=name=>header.indexOf(name);
+
+      // Probeer ook Nederlandse kolomnamen te matchen
+      const colMatch=(namen)=>{ for(const n of namen){ const i=col(n); if(i>-1) return i; } return -1; };
+
+      const iDatum      = colMatch(['datum','date']);
+      const iVoertuig   = colMatch(['voertuig','vehicle','auto']);
+      const iKenteken   = colMatch(['kenteken','license','plate']);
+      const iEindKm     = colMatch(['eindstand km','eindstand','end km','eind km','kilometerstand','km stand']);
+      const iNaam       = colMatch(['locatie','location','bestemming','naam']);
+      const iPc         = colMatch(['postcode','postal code','zip']);
+      const iPlaats     = colMatch(['plaats','city','stad']);
+      const iSoort      = colMatch(['soort','type','categorie','category']);
+
+      const iAfgelegd   = colMatch(['totaal km','afgelegd','totaal','total km','gereden km']);
+      const iWerk       = colMatch(['werk km','business km','zakelijk']);
+      const iPriv       = colMatch(['privé km','prive km','private km','privé','prive']);
+      const iOpmerking  = colMatch(['opmerking','note','notitie','comment']);
+      const iGelogd     = colMatch(['gelogd op','logged','logtijd','log tijd','log time']);
+
+      if(iDatum===-1||iEindKm===-1){
+        toast('⚠ Kolommen "Datum" en "Eindstand km" niet gevonden. Gevonden: ' + header.join(', '));
+        return;
+      }
+
+      // Bouw een lookup: kenteken/naam → voertuig-id
+      const vtLookup = {};
+      voertuigen.forEach(v=>{
+        if(v.kenteken) vtLookup[v.kenteken.toUpperCase()] = v.id;
+        const label = [v.merk,v.type].filter(Boolean).join(' ').toUpperCase();
+        if(label) vtLookup[label] = v.id;
+      });
+
+      // Stap 1: verzamel unieke voertuigen uit de CSV en maak ontbrekende aan
+      const csvVoertuigen = {};
+      for(let i=1;i<lines.length;i++){
+        const c=parseRow(lines[i]);
+        if(c.length < 2) continue;
+        const ken = iKenteken>-1 ? (c[iKenteken]||'').trim().toUpperCase() : '';
+        const vtn = iVoertuig>-1 ? (c[iVoertuig]||'').trim() : '';
+        const key = ken || vtn.toUpperCase();
+        if(!key) continue;
+        if(!csvVoertuigen[key]) csvVoertuigen[key] = { kenteken: ken, naam: vtn };
+      }
+      let nieuweVoertuigen = 0;
+      Object.values(csvVoertuigen).forEach(cv=>{
+        const ken = cv.kenteken;
+        const naam = cv.naam;
+        // Al bekend?
+        if(vtLookup[ken] || vtLookup[naam.toUpperCase()]) return;
+        // Splits "Merk Type" (bijv. "Opel Mokka" → merk=Opel, type=Mokka)
+        const delen = naam.split(' ');
+        const merk = delen[0] || '';
+        const type = delen.slice(1).join(' ') || '';
+        const nieuwVt = {
+          id: Date.now() + nieuweVoertuigen + 1,
+          merk, type,
+          kenteken: ken,
+          beginKm: 0,
+          brandstof: [],
+          kleur: '#f59e0b'
+        };
+        voertuigen.push(nieuwVt);
+        // Voeg toe aan lookup voor de rest van de import
+        if(ken)  vtLookup[ken] = nieuwVt.id;
+        if(naam.toUpperCase()) vtLookup[naam.toUpperCase()] = nieuwVt.id;
+        nieuweVoertuigen++;
+      });
+      // Als er maar 1 voertuig is en nog geen actief, stel het in
+      if(voertuigen.length===1 && !settings.actieveVoertuigId){
+        settings.actieveVoertuigId = voertuigen[0].id;
+      }
+
+      // Stap 2: verwerk rijen
+      const imported=[];
+      const ts = Date.now();
+      for(let i=1;i<lines.length;i++){
+        const c=parseRow(lines[i]);
+        if(c.length < 2) continue;
+        const soort=(c[iSoort]||'').toLowerCase();
+        const isWerk=soort==='werk';
+        // Accepteer zowel punt als komma als decimaalteken
+        const parseNum = v => parseFloat((v||'').replace(',','.').replace(/[^0-9.\-]/g,''))||0;
+        const eindKm=parseNum(c[iEindKm]);
+        if(!eindKm) continue;
+
+        // Koppel voertuig via kenteken of naam
+        const csvKenteken = iKenteken>-1 ? (c[iKenteken]||'').toUpperCase() : '';
+        const csvVoertuig = iVoertuig>-1 ? (c[iVoertuig]||'').toUpperCase() : '';
+        const voertuigId  = vtLookup[csvKenteken] || vtLookup[csvVoertuig] || getActiefVoertuig()?.id || null;
+        const vtObj = voertuigen.find(v=>v.id===voertuigId);
+        const voertuigLabel   = vtObj ? ([vtObj.merk,vtObj.type].filter(Boolean).join(' ')||vtObj.kenteken||'') : (c[iVoertuig]||'');
+        const voertuigKenteken= vtObj ? (vtObj.kenteken||'') : csvKenteken;
+
+        // Gebruik 'Gelogd op' als logTijd zodat volgorde klopt
+        let logTijd = '';
+        if(iGelogd>-1 && c[iGelogd]){
+          // Formaat: "2026-01-05 01:25:00" → "2026-01-05T01:25:00"
+          logTijd = c[iGelogd].trim().replace(' ','T');
+        }
+        if(!logTijd) logTijd = c[iDatum] + 'T00:00:00';
+
+        imported.push({
+          id: ts*1000+i,
+          datum:           c[iDatum]||'',
+          eindKm,
+          locatieNaam:     iNaam>-1?c[iNaam]||'':'',
+          locatiePostcode: iPc>-1?c[iPc]||'':'',
+          locatiePlaats:   iPlaats>-1?c[iPlaats]||'':'',
+          locatieId:       null,
+          isWerk,
+          afgelegdKm:      iAfgelegd>-1?parseNum(c[iAfgelegd]):0,
+          werkKm:          iWerk>-1?parseNum(c[iWerk]):0,
+          privKm:          iPriv>-1?parseNum(c[iPriv]):0,
+          opmerking:       iOpmerking>-1?c[iOpmerking]||'':'',
+          logTijd,
+          voertuigId,
+          voertuigLabel,
+          voertuigKenteken,
+        });
+      }
+
+      if(!imported.length){ toast('⚠ Geen geldige rijen gevonden'); return; }
+
+      // Alle geïmporteerde rijen direct toevoegen zonder duplicaatcontrole
+      ritten=[...ritten,...imported].sort((a,b)=>normLogTijd(a).localeCompare(normLogTijd(b)));
+
+      save();
+      renderRitten();
+      renderVoertuigen();
+      updateTopbar();
+      input.value='';
+
+      let importMsg = `✓ ${imported.length} rijen geïmporteerd`;
+      if(nieuweVoertuigen > 0) importMsg += ` · ${nieuweVoertuigen} nieuw voertuig${nieuweVoertuigen>1?'en':''} aangemaakt`;
+      toast(importMsg);
+    }catch(err){
+      toast('⚠ Fout bij importeren: '+err.message);
+    }
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function parseCSVRow(row){ return parseCSVRowSep(row, ','); }
+function parseCSVRowSep(row, sep){
+  const result=[]; let cur=''; let inQ=false;
+  for(let i=0;i<row.length;i++){
+    const ch=row[i];
+    if(ch==='"'){ inQ=!inQ; }
+    else if(ch===sep&&!inQ){ result.push(cur); cur=''; }
+    else{ cur+=ch; }
+  }
+  result.push(cur);
+  return result.map(s=>s.replace(/^"|"$/g,'').replace(/""/g,'"'));
+}
+
+
+
+
+function fmt(n){ return Number(n).toLocaleString('nl-NL'); }
+function fmtPriv(n){ return Number(n).toLocaleString('nl-NL',{minimumFractionDigits:1,maximumFractionDigits:1}); }
+function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+const ACCENT_PRESETS = [
+  {hex:'#f59e0b', label:'Amber'},{hex:'#3b82f6', label:'Blauw'},{hex:'#10b981', label:'Groen'},
+  {hex:'#ec4899', label:'Roze'},{hex:'#8b5cf6', label:'Paars'},{hex:'#ef4444', label:'Rood'},
+  {hex:'#06b6d4', label:'Cyan'},{hex:'#f97316', label:'Oranje'},
+];
+const BG_PRESETS_DARK = [
+  {hex:'#0b1120', label:'Nacht'},{hex:'#0f172a', label:'Donkerblauw'},
+  {hex:'#111827', label:'Graphite'},{hex:'#1a0a2e', label:'Indigo'},
+  {hex:'#0a1a0f', label:'Bosgroen'},{hex:'#1a0a0a', label:'Bordeaux'},
+  {hex:'#18181b', label:'Zink'},{hex:'#0d0d0d', label:'Zwart'},
+];
+const BG_PRESETS_LIGHT = [
+  {hex:'#f8fafc', label:'Wit'},{hex:'#f1f5f9', label:'Slate'},
+  {hex:'#f0f9ff', label:'Lichtblauw'},{hex:'#f0fdf4', label:'Lichtgroen'},
+  {hex:'#fdf4ff', label:'Lichtpaars'},{hex:'#fff7ed', label:'Lichtoranje'},
+  {hex:'#fce7f3', label:'Lichtroze'},{hex:'#fef9c3', label:'Lichtgeel'},
+];
+const VT_KLEUR_PRESETS = [
+  '#ef4444','#f97316','#eab308','#22c55e','#06b6d4',
+  '#3b82f6','#8b5cf6','#ec4899','#f1f5f9','#64748b',
+];
+
+let themeSettings = DB.get('km-theme', { accent:'#f59e0b', bg:'#0b1120', mode:'dark' });
+if(!themeSettings.mode) themeSettings.mode = 'dark';
+
+let selectedVtKleur = '#f59e0b';
+
+function isDarkMode(){
+  if(themeSettings.mode === 'auto' || themeSettings.mode === 'voertuig'){
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  return themeSettings.mode === 'dark';
+}
+
+function getEffectiveAccent(){
+  if(themeSettings.mode === 'voertuig'){
+    const v = getActiefVoertuig();
+    return v?.kleur || themeSettings.accent;
+  }
+  return themeSettings.accent;
+}
+
+function getEffectiveBg(){
+  if(themeSettings.mode === 'voertuig' || themeSettings.mode === 'auto'){
+    return isDarkMode() ? (themeSettings.bgDark || '#0b1120') : (themeSettings.bgLight || '#f8fafc');
+  }
+  return themeSettings.bg;
+}
+
+function applyTheme(){
+  const dark = isDarkMode();
+  const accent = getEffectiveAccent();
+  const bg = getEffectiveBg();
+
+  document.documentElement.style.setProperty('--clr-accent', accent);
+  document.documentElement.style.setProperty('--clr-bg',     bg);
+  if(dark){
+    document.documentElement.style.setProperty('--clr-surface', lighten(bg, 6));
+    document.documentElement.style.setProperty('--clr-card',    lighten(bg, 14));
+    document.body.style.color = '#f1f5f9';
+  } else {
+    document.documentElement.style.setProperty('--clr-surface', darken(bg, 6));
+    document.documentElement.style.setProperty('--clr-card',    darken(bg, 2));
+    document.body.style.color = '#0f172a';
+  }
+  document.documentElement.dataset.colorMode = dark ? 'dark' : 'light';
+
+  const isVoertuig = themeSettings.mode === 'voertuig';
+  const isAuto     = themeSettings.mode === 'auto';
+  const acCard = document.getElementById('accent-card');
+  const bgCard = document.getElementById('bg-card');
+  const vtInfo = document.getElementById('voertuig-mode-info');
+  if(acCard) acCard.style.display = isVoertuig ? 'none' : 'block';
+  if(bgCard) bgCard.style.display = (isAuto || isVoertuig) ? 'none' : 'block';
+  if(vtInfo) vtInfo.style.display = isVoertuig ? 'block' : 'none';
+
+  renderModeBtns();
+}
+
+function lighten(hex, pct){
+  let r=parseInt(hex.slice(1,3),16)||0,g=parseInt(hex.slice(3,5),16)||0,b=parseInt(hex.slice(5,7),16)||0;
+  return '#'+[Math.min(255,r+pct),Math.min(255,g+pct),Math.min(255,b+pct)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function darken(hex, pct){
+  let r=parseInt(hex.slice(1,3),16)||240,g=parseInt(hex.slice(3,5),16)||244,b=parseInt(hex.slice(5,7),16)||248;
+  return '#'+[Math.max(0,r-pct),Math.max(0,g-pct),Math.max(0,b-pct)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+function setColorMode(mode){
+  if(mode==='dark')  { themeSettings.bg = themeSettings.bgDark  || '#0b1120'; }
+  if(mode==='light') { themeSettings.bg = themeSettings.bgLight || '#f8fafc'; }
+  themeSettings.mode = mode;
+  DB.set('km-theme', themeSettings);
+  applyTheme();
+  renderSwatches();
+}
+
+function applyAccent(hex){
+  themeSettings.accent = hex;
+  DB.set('km-theme', themeSettings);
+  applyTheme();
+  renderSwatches();
+}
+
+function applyBg(hex){
+  themeSettings.bg = hex;
+  if(isDarkMode()) themeSettings.bgDark = hex; else themeSettings.bgLight = hex;
+  DB.set('km-theme', themeSettings);
+  applyTheme();
+  renderSwatches();
+}
+
+function resetTheme(){
+  themeSettings = { accent:'#f59e0b', bg:'#0b1120', bgDark:'#0b1120', bgLight:'#f8fafc', mode:'dark' };
+  DB.set('km-theme', themeSettings);
+  applyTheme();
+  renderSwatches();
+}
+
+function wisAlleData(){ wisData('alles'); }
+function wisAlleenRitten(){ wisData('ritten'); }
+
+function wisData(type){
+  const cfg = {
+    alles:     { titel:'Alles wissen',      bericht:'Alle ritten, verbruik, locaties en voertuigen worden permanent verwijderd. Thema-instellingen blijven bewaard.' },
+    ritten:    { titel:'Ritten wissen',     bericht:'Alle geregistreerde ritten worden permanent verwijderd.' },
+    verbruik:  { titel:'Verbruik wissen',   bericht:'Alle verbruikregistraties worden permanent verwijderd.' },
+    locaties:  { titel:'Locaties wissen',   bericht:'Alle opgeslagen locaties worden permanent verwijderd.' },
+    voertuigen:{ titel:'Voertuigen wissen', bericht:'Alle voertuigen en bijbehorende gegevens worden permanent verwijderd.' },
+  };
+  const { titel, bericht } = cfg[type] || cfg.alles;
+  toonConfirm(titel, bericht, 'Verwijderen', '#f87171', ()=>{
+    if(type==='alles'||type==='ritten'){    ritten=[];    DB.set('km-ritten',[]); }
+    if(type==='alles'||type==='verbruik'){  verbruiken=[]; DB.set('km-verbruiken',[]); }
+    if(type==='alles'||type==='locaties'){  locaties=[];  DB.set('km-locaties',[]); }
+    if(type==='alles'||type==='voertuigen'){
+      voertuigen=[]; DB.set('km-voertuigen',[]);
+      settings.actieveVoertuigId=null; settings.actieveVoertuigKenteken=null;
+    }
+    save();
+    renderRitten();
+    if(typeof renderLocaties==='function') renderLocaties();
+    if(typeof renderVoertuigen==='function') renderVoertuigen();
+    updateTopbar();
+    toast('\u2713 '+titel);
+  });
+}
+
+function toonConfirm(titel, bericht, btnLabel, btnKleur, callback){
+  // Verwijder eventueel bestaand modaal
+  const bestaand = document.getElementById('confirm-modal');
+  if(bestaand) bestaand.remove();
+  const modal = document.createElement('div');
+  modal.id = 'confirm-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:#00000090;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = '<div style="background:#1e293b;border-radius:16px;padding:24px;max-width:340px;width:100%;box-shadow:0 24px 48px #00000080">'
+    +'<div style="font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:8px">'+esc(titel)+'</div>'
+    +'<div style="font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:20px">'+esc(bericht)+'</div>'
+    +'<div style="display:flex;gap:10px;justify-content:flex-end">'
+      +'<button onclick="document.getElementById(\'confirm-modal\').remove()" class="btn btn-ghost btn-sm">Annuleren</button>'
+      +'<button id="confirm-ok-btn" class="btn btn-sm" style="background:'+btnKleur+'20;color:'+btnKleur+';border:1px solid '+btnKleur+'40">'+esc(btnLabel)+'</button>'
+    +'</div>'
+  +'</div>';
+  document.body.appendChild(modal);
+  modal.onclick = e=>{ if(e.target===modal) modal.remove(); };
+  document.getElementById('confirm-ok-btn').onclick = ()=>{
+    modal.remove();
+    // Tweede bevestiging
+    const modal2 = document.createElement('div');
+    modal2.id = 'confirm-modal';
+    modal2.style.cssText = 'position:fixed;inset:0;background:#00000090;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    modal2.innerHTML = '<div style="background:#1e293b;border-radius:16px;padding:24px;max-width:340px;width:100%;box-shadow:0 24px 48px #00000080">'
+      +'<div style="font-size:15px;font-weight:700;color:#f87171;margin-bottom:8px">&#x26A0; Weet u het zeker?</div>'
+      +'<div style="font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:20px">Dit kan <strong style="color:#f87171">niet ongedaan</strong> worden gemaakt.</div>'
+      +'<div style="display:flex;gap:10px;justify-content:flex-end">'
+        +'<button onclick="document.getElementById(\'confirm-modal\').remove()" class="btn btn-ghost btn-sm">Annuleren</button>'
+        +'<button id="confirm-ok-btn2" class="btn btn-sm" style="background:#ef444420;color:#f87171;border:1px solid #ef444440">Ja, verwijderen</button>'
+      +'</div>'
+    +'</div>';
+    document.body.appendChild(modal2);
+    modal2.onclick = e=>{ if(e.target===modal2) modal2.remove(); };
+    document.getElementById('confirm-ok-btn2').onclick = ()=>{ modal2.remove(); callback(); };
+  };
+}
+
+function renderModeBtns(){
+  document.querySelectorAll('.theme-mode-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.mode === themeSettings.mode);
+  });
+}
+
+function renderSwatches(){
+  const ac = document.getElementById('accent-swatches');
+  const bg = document.getElementById('bg-swatches');
+  const curAccent = getEffectiveAccent();
+  if(ac) ac.innerHTML = ACCENT_PRESETS.map(p=>`
+    <div class="swatch${curAccent===p.hex?' selected':''}" title="${p.label}"
+      style="background:${p.hex}" onclick="applyAccent('${p.hex}')"></div>`).join('');
+  const bgPresets = isDarkMode() ? BG_PRESETS_DARK : BG_PRESETS_LIGHT;
+  const curBg = getEffectiveBg();
+  if(bg) bg.innerHTML = bgPresets.map(p=>`
+    <div class="swatch${curBg===p.hex?' selected':''}" title="${p.label}"
+      style="background:${p.hex};border:2px solid ${curBg===p.hex?'#aaa':'#334155'}" onclick="applyBg('${p.hex}')"></div>`).join('');
+  const acEl=document.getElementById('accent-custom');
+  const bgEl=document.getElementById('bg-custom');
+  if(acEl) acEl.value=curAccent;
+  if(bgEl) bgEl.value=curBg;
+  renderModeBtns();
+  renderVtKleurSwatches();
+}
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>{
+  if(themeSettings.mode==='auto' || themeSettings.mode==='voertuig') applyTheme();
+});
+
+function setVtKleur(hex){
+  selectedVtKleur = hex;
+  renderVtKleurSwatches();
+}
+
+function renderVtKleurSwatches(){
+  const wrap = document.getElementById('vt-kleur-swatches');
+  if(!wrap) return;
+  wrap.innerHTML = VT_KLEUR_PRESETS.map(hex=>`
+    <div onclick="setVtKleur('${hex}')" title="${hex}" style="
+      width:26px;height:26px;border-radius:50%;background:${hex};cursor:pointer;flex-shrink:0;
+      border:2px solid ${selectedVtKleur===hex?'#fff':'transparent'};
+      transform:scale(${selectedVtKleur===hex?'1.2':'1'});transition:all .15s"></div>`).join('');
+  const el = document.getElementById('vt-kleur-custom');
+  if(el) el.value = selectedVtKleur;
+}
+
+function loadKleurVoertuig(v){
+  selectedVtKleur = v?.kleur || '#f59e0b';
+  renderVtKleurSwatches();
+}
+
+let selectedBrandstof = [];
+
+function toggleBrandstof(type){
+  const idx = selectedBrandstof.indexOf(type);
+  if(idx>=0) selectedBrandstof.splice(idx,1);
+  else selectedBrandstof.push(type);
+  renderBrandstofBtns();
+}
+
+function renderBrandstofBtns(){
+  document.querySelectorAll('.brandstof-btn').forEach(btn=>{
+    btn.classList.toggle('active', selectedBrandstof.includes(btn.dataset.bs));
+  });
+}
+
+function loadBrandstofVoertuig(v){
+  selectedBrandstof = v?.brandstof ? [...v.brandstof] : [];
+  renderBrandstofBtns();
+}
+
+let vbState = { type:'brandstof', vol:true };
+let vbTarief = { kwh:null, benzine:null, diesel:null, bron:null, opgehaaldOp:null };
+
+async function haalEnergieTariefOp(){
+  const opgeslagen = DB.get('km-energietarief', null);
+  if(opgeslagen && opgeslagen.opgehaaldOp && (Date.now()-opgeslagen.opgehaaldOp)/3600000 < 4){
+    vbTarief = opgeslagen; updateVbTariefBadge(); return;
+  }
+  try{
+    const url = 'https://api.energyzero.nl/v1/energyprices?fromDate='
+      +new Date().toISOString().split('T')[0]+'T00:00:00.000Z&tillDate='
+      +new Date().toISOString().split('T')[0]+'T23:59:59.000Z&interval=4&usagetype=1&inclBtw=true';
+    const resp = await fetch(url,{signal:AbortSignal.timeout(6000)});
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data = await resp.json();
+    const nu=new Date(); let huidig=null;
+    for(const p of (data.Prices||[])){ if(new Date(p.readingDate)<=nu) huidig=p.price; }
+    if(huidig!==null){
+      vbTarief={kwh:huidig,benzine:null,diesel:null,bron:'EnergyZero',opgehaaldOp:Date.now()};
+      DB.set('km-energietarief',vbTarief); updateVbTariefBadge();
+    }
+  }catch(e){ if(opgeslagen){vbTarief=opgeslagen; updateVbTariefBadge();} }
+}
+
+function updateVbTariefBadge(){
+  const badge=document.getElementById('vb-tarief-badge'); if(!badge) return;
+  if(vbTarief.kwh && vbState.type==='elektrisch'){
+    badge.style.display='inline';
+    const min=vbTarief.opgehaaldOp?Math.round((Date.now()-vbTarief.opgehaaldOp)/60000):null;
+    badge.textContent='live'+(min!==null?' \u00b7 '+min+'m':'');
+    const pe=document.getElementById('vb-prijs-per-e');
+    if(pe&&!pe.value){ pe.value=vbTarief.kwh.toFixed(4); updateVbTotaalprijs(); }
+  } else { badge.style.display='none'; }
+}
+
+function berekenVbPrijsUitTarief(){
+  if(vbState.type!=='elektrisch') return;
+  const perEl=document.getElementById('vb-prijs-per-e');
+  if(perEl&&!perEl.value&&vbTarief.kwh){ perEl.value=vbTarief.kwh.toFixed(4); updateVbTotaalprijs(); }
+}
+
+function getVbTypesVoorVoertuig(){
+  const av=getActiefVoertuig(); const bs=av?.brandstof||[];
+  if(!bs.length) return ['brandstof','elektrisch','overig'];
+  const types=[];
+  if(bs.some(b=>['benzine','diesel','lpg'].includes(b))) types.push('brandstof');
+  if(bs.includes('elektrisch')) types.push('elektrisch');
+  types.push('overig'); return types;
+}
+
+function setVbType(type){
+  vbState.type=type;
+  document.querySelectorAll('.vb-type-btn').forEach(b=>{
+    const a=b.dataset.type===type;
+    b.classList.toggle('active',a);
+    b.style.background=a?'var(--clr-accent)':'transparent';
+    b.style.color=a?'var(--clr-surface)':'#64748b';
+    b.style.fontWeight=a?'700':'600';
+  });
+  const isElec=type==='elektrisch', isOverig=type==='overig';
+  document.getElementById('vb-hoeveelheid-label').textContent=isElec?'Hoeveelheid (kWh)':'Liters';
+  document.getElementById('vb-hoeveelheid-suffix').textContent=isElec?'kWh':'L';
+  document.getElementById('vb-hoeveelheid-field').style.display=isOverig?'none':'grid';
+  document.getElementById('vb-vol-field').style.display=isOverig||isElec?'none':'flex';
+  // Label van prijs-per-eenheid veld aanpassen
+  const pLbl=document.getElementById('vb-prijs-label');
+  if(pLbl) pLbl.textContent=isElec?'Prijs per kWh':'Prijs per L';
+  updateVbTariefBadge(); updateVbTotaalprijs();
+}
+
+function updateVbTypeBtns(){
+  const t=getVbTypesVoorVoertuig();
+  document.querySelectorAll('.vb-type-btn').forEach(b=>{ b.style.display=t.includes(b.dataset.type)?'inline-flex':'none'; });
+  if(!t.includes(vbState.type)) setVbType(t[0]);
+}
+
+function getLaatsteKmStand(kenteken){
+  const kt=kenteken||getActiefVoertuig()?.kenteken; if(!kt) return null;
+  const r=ritten.filter(x=>x.voertuigKenteken===kt&&x.eindKm).sort((a,b)=>normLogTijd(b).localeCompare(normLogTijd(a)));
+  if(r.length) return r[0].eindKm;
+  const v=verbruiken.filter(x=>x.voertuigKenteken===kt&&x.km).sort((a,b)=>b.datum.localeCompare(a.datum));
+  if(v.length) return v[0].km;
+  return voertuigen.find(x=>x.kenteken===kt)?.beginKm||null;
+}
+
+function toggleVbVol(){
+  vbState.vol=!vbState.vol;
+  const track=document.getElementById('vb-vol-track');
+  const lbl=document.getElementById('vb-vol-label');
+  track.className='toggle-track'+(vbState.vol?' checked on-amber':'');
+  lbl.style.color=vbState.vol?'var(--clr-accent)':'#64748b';
+}
+
+function updateVbTotaalprijs(){
+  const h=parseFloat(document.getElementById('vb-hoeveelheid').value)||0;
+  const p=parseFloat(document.getElementById('vb-prijs-per-e').value)||0;
+  const wrap=document.getElementById('vb-totaalprijs-wrap');
+  const span=document.getElementById('vb-totaalprijs-val');
+  if(h>0&&p>0&&vbState.type!=='overig'){
+    wrap.style.display='block';
+    span.textContent='\u20ac\u00a0'+(h*p).toFixed(2);
+  } else if(wrap){ wrap.style.display='none'; }
+}
+function updateVbPrijsPer(){ updateVbTotaalprijs(); }
+
+function saveVerbruik(){
+  const datum=document.getElementById('vb-datum').value;
+  const tijd=document.getElementById('vb-tijd').value||new Date().toTimeString().slice(0,5);
+  let km=parseFloat(document.getElementById('vb-km').value)||0;
+  if(!km){ const lk=getLaatsteKmStand(); if(lk) km=lk; }
+  const hoeveelheid=parseFloat(document.getElementById('vb-hoeveelheid').value)||0;
+  const prijsPerE=parseFloat(document.getElementById('vb-prijs-per-e').value)||0;
+  const prijs=hoeveelheid>0&&prijsPerE>0 ? Math.round(hoeveelheid*prijsPerE*100)/100 : 0;
+  const opmerking=document.getElementById('vb-opmerking').value.trim();
+  if(!datum){ toast('\u26a0 Vul een datum in'); return; }
+  if(!km){ toast('\u26a0 Vul de kilometerstand in (geen eerdere stand beschikbaar)'); return; }
+  const av=getActiefVoertuig();
+  const editId=document.getElementById('vb-edit-id').value;
+  const entry={
+    id:editId?parseInt(editId):Date.now(),
+    datum,tijd,km,hoeveelheid,prijsPerE,prijs,opmerking,
+    type:vbState.type, vol:vbState.vol,
+    voertuigKenteken:av?.kenteken||null,
+    voertuigLabel:av?([av.merk,av.type].filter(Boolean).join(' ')||av.kenteken||''):'',
+  };
+  if(editId){ const idx=verbruiken.findIndex(v=>v.id===parseInt(editId)); if(idx!==-1) verbruiken[idx]=entry; toast('\u2713 Gewijzigd'); }
+  else { verbruiken.push(entry); toast('\u2713 Opgeslagen'); }
+  save(); cancelEditVerbruik(); renderVerbruik(); bouwVbVoertuigFilter();
+}
+
+function editVerbruik(id){
+  const v=verbruiken.find(v=>v.id===id); if(!v) return;
+  document.getElementById('vb-edit-id').value=v.id;
+  document.getElementById('vb-datum').value=v.datum;
+  document.getElementById('vb-tijd').value=v.tijd||'';
+  document.getElementById('vb-km').value=v.km;
+  document.getElementById('vb-hoeveelheid').value=v.hoeveelheid||'';
+  document.getElementById('vb-prijs-per-e').value=v.prijsPerE||'';
+  document.getElementById('vb-opmerking').value=v.opmerking||'';
+  vbState.vol=v.vol!==false;
+  setVbType(v.type||'brandstof');
+  const track=document.getElementById('vb-vol-track');
+  const lbl=document.getElementById('vb-vol-label');
+  track.className='toggle-track'+(vbState.vol?' checked on-amber':'');
+  lbl.style.color=vbState.vol?'var(--clr-accent)':'#64748b';
+  document.getElementById('vb-form-title').textContent='Beurt aanpassen';
+  document.getElementById('vb-save-label').textContent='Wijzigingen opslaan';
+  document.getElementById('vb-cancel-btn').style.display='inline-flex';
+  document.getElementById('vb-form-title').scrollIntoView({behavior:'smooth',block:'center'});
+  updateVbPrijsPer();
+}
+
+function updateVbKmHint(){
+  const kmEl  = document.getElementById('vb-km');
+  const hint  = document.getElementById('vb-km-hint');
+  if(!kmEl || !hint) return;
+  const lk = getLaatsteKmStand();
+  if(lk){
+    kmEl.placeholder = fmt(lk);
+    hint.textContent = '↩ Leeg laten = laatste stand (' + fmt(lk) + ' km) wordt gebruikt';
+  } else {
+    kmEl.placeholder = 'bijv. 36500';
+    hint.textContent = '';
+  }
+}
+
+function cancelEditVerbruik(){
+  document.getElementById('vb-edit-id').value='';
+  document.getElementById('vb-datum').value='';
+  document.getElementById('vb-tijd').value='';
+  document.getElementById('vb-km').value='';
+  document.getElementById('vb-hoeveelheid').value='';
+  document.getElementById('vb-prijs-per-e').value='';
+  document.getElementById('vb-opmerking').value='';
+  vbState.vol=true;
+  updateVbTypeBtns();
+  setVbType(getVbTypesVoorVoertuig()[0]);
+  const track=document.getElementById('vb-vol-track');
+  const lbl=document.getElementById('vb-vol-label');
+  track.className='toggle-track checked on-amber';
+  lbl.style.color='var(--clr-accent)';
+  document.getElementById('vb-form-title').textContent='Toevoegen';
+  document.getElementById('vb-save-label').textContent='Opslaan';
+  document.getElementById('vb-cancel-btn').style.display='none';
+  updateVbKmHint(); updateVbPrijsPer();
+}
+
+function delVerbruik(id){
+  if(!confirm('Verwijderen?')) return;
+  verbruiken=verbruiken.filter(v=>v.id!==id);
+  save(); renderVerbruik(); toast('✓ Verwijderd');
+}
+
+function loadVerbruik(){
+  const now=new Date();
+  const editId=document.getElementById('vb-edit-id').value;
+  if(!editId){
+    const dEl=document.getElementById('vb-datum');
+    const tEl=document.getElementById('vb-tijd');
+    if(!dEl.value) dEl.value=now.toISOString().split('T')[0];
+    if(!tEl.value) tEl.value=now.toTimeString().slice(0,5);
+  }
+  updateVbTypeBtns();
+  updateVbKmHint();
+  updateVbVoertuigLabel();
+  bouwVbVoertuigFilter();
+  ['vb-hoeveelheid','vb-prijs-per-e'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&!el._vbWired){
+      el.addEventListener('input',()=>{ updateVbTotaalprijs(); if(id==='vb-hoeveelheid') berekenVbPrijsUitTarief(); });
+      el._vbWired=true;
+    }
+  });
+  haalEnergieTariefOp();
+  renderVerbruik();
+}
+
+function updateVbVoertuigLabel(){
+  const av=getActiefVoertuig();
+  const lbl=document.getElementById('vb-voertuig-label'); if(!lbl) return;
+  if(av){ const n=[av.merk,av.type].filter(Boolean).join(' ')||av.kenteken; lbl.innerHTML='&#x1F697; Registreren voor: <strong style="color:#f1f5f9">'+esc(n)+' ('+esc(av.kenteken)+')</strong>'; }
+  else lbl.innerHTML='<span style="color:#f87171">&#x26A0; Geen actief voertuig geselecteerd</span>';
+}
+
+function bouwVbVoertuigFilter(){
+  const sel=document.getElementById('vb-filter-voertuig'); if(!sel) return;
+  const huidig=sel.value;
+  const kts=[...new Set(verbruiken.map(v=>v.voertuigKenteken).filter(Boolean))];
+  sel.innerHTML='<option value="">Alle auto\'s</option>'
+    +kts.map(k=>{ const v=voertuigen.find(x=>x.kenteken===k); const lbl=v?([v.merk,v.type].filter(Boolean).join(' ')||k)+' ('+k+')':k; return '<option value="'+esc(k)+'"'+(k===huidig?' selected':'')+'>'+esc(lbl)+'</option>'; }).join('');
+  if(!huidig){ const av=getActiefVoertuig(); if(av&&kts.includes(av.kenteken)) sel.value=av.kenteken; }
+}
+
+function renderVerbruik(){
+  const av=getActiefVoertuig();
+  const filterKt=(document.getElementById('vb-filter-voertuig')?.value)||'';
+  const statKt=av?.kenteken||null;
+  const statVbs=verbruiken.filter(v=>v.voertuigKenteken===statKt);
+  const totalKosten=statVbs.reduce((s,v)=>s+(v.prijs||0),0);
+  const totalHoeveelheid=statVbs.filter(v=>v.type!=='overig').reduce((s,v)=>s+(v.hoeveelheid||0),0);
+  const statVol=[...statVbs].filter(v=>v.vol&&v.hoeveelheid&&v.type!=='overig').sort((a,b)=>a.datum.localeCompare(b.datum));
+  let gemVerbruik=null;
+  if(statVol.length>=2){ const h=statVol.slice(1).reduce((s,v)=>s+(v.hoeveelheid||0),0); const d=statVol[statVol.length-1].km-statVol[0].km; if(d>0) gemVerbruik=h/d*100; }
+  const vtRitten=ritten.filter(r=>r.voertuigKenteken===statKt);
+  const totKm=vtRitten.reduce((s,r)=>s+(r.afgelegdKm||0),0);
+  const kostPerKm=totKm>0?totalKosten/totKm:null;
+  const hasElec=statVbs.some(v=>v.type==='elektrisch'), hasFuel=statVbs.some(v=>v.type==='brandstof');
+  const eenheid=hasElec&&!hasFuel?'kWh':'L';
+
+  document.getElementById('vb-gem-verbruik').textContent=gemVerbruik!=null?gemVerbruik.toFixed(2):'\u2013';
+  document.getElementById('vb-verbruik-label').textContent=eenheid==='kWh'?'kWh / 100 km':'L / 100 km';
+  document.getElementById('vb-totaal-kosten').textContent=totalKosten>0?'\u20ac\u00a0'+totalKosten.toFixed(2):'\u20ac \u2013';
+  document.getElementById('vb-kosten-per-km').textContent=kostPerKm!=null?'\u20ac\u00a0'+kostPerKm.toFixed(3):'\u20ac \u2013';
+  document.getElementById('vb-totaal-hoeveelheid').textContent=totalHoeveelheid>0?totalHoeveelheid.toFixed(1)+'\u00a0'+eenheid:'\u2013';
+  document.getElementById('vb-hoeveelheid-totaal-label').textContent='Totaal '+eenheid;
+  renderVerbruikChart(statVbs,eenheid,statVol);
+
+  const vbs=[...verbruiken].filter(v=>!filterKt||v.voertuigKenteken===filterKt)
+    .sort((a,b)=>(b.datum+' '+(b.tijd||'')).localeCompare(a.datum+' '+(a.tijd||'')));
+  const volFiltered=[...vbs].filter(v=>v.vol&&v.hoeveelheid&&v.type!=='overig').sort((a,b)=>a.datum.localeCompare(b.datum));
+
+  const lijst=document.getElementById('vb-lijst');
+  const empty=document.getElementById('vb-empty');
+  const count=document.getElementById('vb-count');
+  if(!vbs.length){ lijst.innerHTML=''; empty.style.display='block'; count.textContent=''; return; }
+  empty.style.display='none';
+  count.textContent=vbs.length+' beurt'+(vbs.length!==1?'en':'');
+  const tIcon={brandstof:'&#x26FD;',elektrisch:'&#x26A1;',overig:'&#x1F527;'};
+  const tBg={brandstof:'rgba(245,158,11,.12)',elektrisch:'rgba(52,211,153,.1)',overig:'rgba(148,163,184,.1)'};
+  const tClr={brandstof:'#f59e0b',elektrisch:'#34d399',overig:'#94a3b8'};
+  lijst.innerHTML=vbs.map(v=>{
+    const ve=v.type==='elektrisch'?'kWh':'L';
+    let vs='';
+    if(v.vol&&v.hoeveelheid&&v.type!=='overig'){
+      const prev=volFiltered.filter(b=>b.voertuigKenteken===v.voertuigKenteken&&b.datum<v.datum&&b.km<v.km).pop();
+      if(prev){const d=v.km-prev.km; if(d>0) vs=(v.hoeveelheid/d*100).toFixed(2)+' '+ve+'/100km';}
+    }
+    const isStart=v.vol&&!volFiltered.some(b=>b.voertuigKenteken===v.voertuigKenteken&&b.datum<v.datum);
+    const sb=isStart?'<span style="font-size:9px;background:rgba(99,102,241,.15);color:#818cf8;border-radius:3px;padding:1px 5px;margin-left:4px">startstand</span>':'';
+    const ppe=(v.hoeveelheid&&v.prijs)?'\u20ac\u00a0'+(v.prijs/v.hoeveelheid).toFixed(3)+'/'+ve:'';
+    const ks=!filterKt&&v.voertuigKenteken?'<span style="font-size:10px;color:#64748b;background:#0f172a;padding:1px 6px;border-radius:4px">'+esc(v.voertuigKenteken)+'</span>':'';
+    const mp=[
+      v.km?fmt(v.km)+' km'+sb:'',
+      v.hoeveelheid?v.hoeveelheid.toFixed(2)+' '+ve:'',
+      ppe, vs?'\u2248 '+vs:'',
+      v.opmerking?'&#x1F4AC; '+esc(v.opmerking):'',
+      v.type==='brandstof'?(v.vol?'Vol':'Gedeeltelijk'):'',
+    ].filter(Boolean);
+    const ts=v.tijd?' \u00b7 '+v.tijd:'';
+    const ic=tIcon[v.type]||'',bg=tBg[v.type]||'rgba(148,163,184,.1)',cl=tClr[v.type]||'#94a3b8';
+    return '<div class="vb-kaart">'
+      +'<div class="vb-icon" style="background:'+bg+';color:'+cl+'">'+ic+'</div>'
+      +'<div class="vb-kaart-body">'
+        +'<div class="vb-kaart-top">'
+          +'<span class="vb-kaart-datum">'+v.datum+ts+'</span>'
+          +'<span style="display:flex;align-items:center;gap:6px">'+ks
+            +'<span class="vb-kaart-prijs">'+(v.prijs?'\u20ac\u00a0'+v.prijs.toFixed(2):'\u2013')+'</span>'
+          +'</span>'
+        +'</div>'
+        +'<div class="vb-kaart-meta">'+mp.map(p=>'<span>'+p+'</span>').join('')+'</div>'
+      +'</div>'
+      +'<div class="vb-kaart-acties">'
+        +'<button class="del-btn" onclick="editVerbruik('+v.id+')" title="Aanpassen" style="color:#475569">'
+          +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
+        +'</button>'
+        +'<button class="del-btn" onclick="delVerbruik('+v.id+')" title="Verwijderen">'
+          +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>'
+        +'</button>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function renderVerbruikChart(vbs, eenheid, statVol){
+  const canvas=document.getElementById('vb-chart');
+  const empty=document.getElementById('vb-chart-empty');
+  const volBeurten=[...vbs].filter(v=>v.vol&&v.hoeveelheid&&v.type!=='overig').sort((a,b)=>a.datum.localeCompare(b.datum));
+  if(volBeurten.length<2){ canvas.style.display='none'; empty.style.display='block'; return; }
+  canvas.style.display='block'; empty.style.display='none';
+
+  const pts=[];
+  for(let i=1;i<volBeurten.length;i++){
+    const d=volBeurten[i].km-volBeurten[i-1].km;
+    if(d>0) pts.push({datum:volBeurten[i].datum, val:volBeurten[i].hoeveelheid/d*100});
+  }
+  if(!pts.length){ canvas.style.display='none'; empty.style.display='block'; return; }
+
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.offsetWidth||canvas.parentElement.offsetWidth||300;
+  const H=180;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+
+  const pad={t:10,r:16,b:30,l:44};
+  const gW=W-pad.l-pad.r, gH=H-pad.t-pad.b;
+  const vals=pts.map(p=>p.val);
+  const minV=Math.max(0,Math.min(...vals)-1), maxV=Math.max(...vals)+1;
+
+  ctx.strokeStyle='#1e293b'; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+gH*(1-i/4);
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+gW,y); ctx.stroke();
+    ctx.fillStyle='#475569'; ctx.font='10px -apple-system,sans-serif'; ctx.textAlign='right';
+    ctx.fillText((minV+(maxV-minV)*i/4).toFixed(1), pad.l-6, y+3);
+  }
+
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--clr-accent').trim()||'#f59e0b';
+  const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+gH);
+  grad.addColorStop(0,accent+'66'); grad.addColorStop(1,accent+'00');
+  ctx.beginPath();
+  pts.forEach((p,i)=>{
+    const x=pad.l+i/(pts.length-1)*gW;
+    const y=pad.t+gH*(1-(p.val-minV)/(maxV-minV));
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.lineTo(pad.l+gW,pad.t+gH); ctx.lineTo(pad.l,pad.t+gH); ctx.closePath();
+  ctx.fillStyle=grad; ctx.fill();
+
+  ctx.strokeStyle=accent; ctx.lineWidth=2; ctx.lineJoin='round';
+  ctx.beginPath();
+  pts.forEach((p,i)=>{
+    const x=pad.l+i/(pts.length-1)*gW;
+    const y=pad.t+gH*(1-(p.val-minV)/(maxV-minV));
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  pts.forEach((p,i)=>{
+    const x=pad.l+i/(pts.length-1)*gW;
+    const y=pad.t+gH*(1-(p.val-minV)/(maxV-minV));
+    ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2);
+    ctx.fillStyle=accent; ctx.fill();
+  });
+
+  ctx.fillStyle='#475569'; ctx.font='10px -apple-system,sans-serif'; ctx.textAlign='center';
+  ctx.fillText(pts[0].datum.slice(5),pad.l,H-6);
+  if(pts.length>1) ctx.fillText(pts[pts.length-1].datum.slice(5),pad.l+gW,H-6);
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  applyTheme();
+  renderSwatches();
+
+  const now = new Date();
+  document.getElementById('rit-datum').value = now.toISOString().split('T')[0];
+  document.getElementById('rit-tijd').value  = now.toTimeString().slice(0,8);
+  document.getElementById('page-ritten').style.display='block';
+  updateTopbar();
+  renderRitten();
+  renderLocaties();
+  loadVoertuig();
+  document.getElementById('rit-eindkm').addEventListener('input', updatePreview);
+  document.getElementById('rit-geredenkm').addEventListener('input', updatePreview);
+});
+
+function loadOverzicht(){
+  const sel = document.getElementById('ov-voertuig');
+  const cur = sel.value;
+  sel.innerHTML='<option value="">Alle voertuigen</option>';
+  voertuigen.forEach(v=>{
+    const label=[v.merk,v.type].filter(Boolean).join(' ')||v.kenteken||'Voertuig';
+    const opt=document.createElement('option');
+    opt.value=v.id; opt.textContent=label+(v.kenteken?' ('+v.kenteken+')':'');
+    sel.appendChild(opt);
+  });
+  sel.value=cur;
+  buildOvSnelknoppen();
+  renderOverzicht();
+}
+
+function buildOvSnelknoppen(){
+  const wrap = document.getElementById('ov-snelknoppen');
+  const now  = new Date();
+  const yr   = now.getFullYear();
+  const jaren = [...new Set(ritten.map(r=>new Date(r.datum).getFullYear()))].sort((a,b)=>b-a);
+  const knoppen = [];
+  jaren.forEach(j=>{
+    knoppen.push({ label: String(j), van: `${j}-01-01`, tot: `${j}-12-31` });
+    knoppen.push({ label: `Q1 ${j}`, van: `${j}-01-01`, tot: `${j}-03-31` });
+    knoppen.push({ label: `Q2 ${j}`, van: `${j}-04-01`, tot: `${j}-06-30` });
+    knoppen.push({ label: `Q3 ${j}`, van: `${j}-07-01`, tot: `${j}-09-30` });
+    knoppen.push({ label: `Q4 ${j}`, van: `${j}-10-01`, tot: `${j}-12-31` });
+  });
+  const visible = jaren.length > 2
+    ? knoppen.filter(k=>k.label.endsWith(String(yr))||k.label.endsWith(String(yr-1)))
+    : knoppen;
+
+  wrap.innerHTML = visible.map(k=>`
+    <button class="btn btn-ghost btn-sm ov-snelknop" onclick="setOvPeriode('${k.van}','${k.tot}',this)">
+      ${k.label}
+    </button>`).join('');
+}
+
+function setOvPeriode(van, tot, btn){
+  document.getElementById('ov-van').value = van;
+  document.getElementById('ov-tot').value = tot;
+  document.querySelectorAll('.ov-snelknop').forEach(b=>b.classList.remove('btn-primary'));
+  document.querySelectorAll('.ov-snelknop').forEach(b=>b.classList.add('btn-ghost'));
+  if(btn){ btn.classList.remove('btn-ghost'); btn.classList.add('btn-primary'); }
+  renderOverzicht();
+}
+
+function resetOvFilters(){
+  document.getElementById('ov-van').value='';
+  document.getElementById('ov-tot').value='';
+  document.getElementById('ov-voertuig').value='';
+  document.getElementById('ov-soort').value='';
+  document.getElementById('ov-locatie').value='';
+  document.querySelectorAll('.ov-snelknop').forEach(b=>{b.classList.remove('btn-primary');b.classList.add('btn-ghost');});
+  renderOverzicht();
+}
+
+function renderOverzicht(){
+  const van      = document.getElementById('ov-van').value;
+  const tot      = document.getElementById('ov-tot').value;
+  const voertuigF= document.getElementById('ov-voertuig').value;
+  const soortF   = document.getElementById('ov-soort').value;
+  const locatieF = document.getElementById('ov-locatie').value.toLowerCase();
+
+  let filtered = ritten.filter(r=>{
+    if(van && r.datum < van) return false;
+    if(tot && r.datum > tot) return false;
+    if(voertuigF && String(r.voertuigId) !== String(voertuigF)) return false;
+    if(soortF==='werk' && !r.isWerk) return false;
+    if(soortF==='priv' && r.isWerk)  return false;
+    if(locatieF && !(r.locatieNaam||'').toLowerCase().includes(locatieF)
+                && !(r.locatiePostcode||'').toLowerCase().includes(locatieF)
+                && !(r.locatiePlaats||'').toLowerCase().includes(locatieF)) return false;
+    return true;
+  }).sort((a,b)=>normLogTijd(b).localeCompare(normLogTijd(a)));
+
+  const totaalKm = filtered.reduce((s,r)=>s+(r.afgelegdKm||0),0);
+  const werkKm   = filtered.reduce((s,r)=>s+(r.werkKm||0),0);
+  const privKm   = filtered.reduce((s,r)=>s+(r.privKm||0),0);
+
+  document.getElementById('ov-count').textContent = `— ${filtered.length} rit${filtered.length!==1?'ten':''}`;
+  document.getElementById('ov-totaal').textContent = fmt(totaalKm)+' km';
+  document.getElementById('ov-werk').textContent   = fmt(werkKm)+' km';
+  document.getElementById('ov-priv').textContent   = fmtPriv(privKm)+' km';
+
+  const tbody = document.getElementById('ov-tbody');
+  const table = document.getElementById('ov-table');
+  const empty = document.getElementById('ov-empty');
+
+  if(!filtered.length){
+    tbody.innerHTML=''; table.style.display='none'; empty.style.display='block'; return;
+  }
+  table.style.display=''; empty.style.display='none';
+  tbody.innerHTML = filtered.map((r,i)=>`
+    <tr style="${i%2?'background:rgba(15,23,42,.35)':''}">
+      <td class="mono" style="color:#94a3b8;white-space:nowrap">${r.datum}</td>
+      <td style="font-size:11px;color:#64748b;white-space:nowrap">${esc(r.voertuigLabel||'—')}</td>
+      <td>
+        <div style="font-size:13px;color:#f1f5f9;font-weight:500">${esc(r.locatieNaam||'—')}</div>
+        <div class="mono" style="font-size:11px;color:#475569">${esc(r.locatiePostcode||'')}${r.locatiePostcode&&r.locatiePlaats?' · ':''}${esc(r.locatiePlaats||'')}</div>
+        ${r.opmerking?`<div style="font-size:11px;color:#64748b;font-style:italic">${esc(r.opmerking)}</div>`:''}
+      </td>
+      <td><span class="badge ${r.isWerk?'badge-werk':'badge-priv'}">${r.isWerk?'Werk':'Privé'}</span></td>
+      <td class="mono text-right" style="color:#34d399">${fmt(r.werkKm||0)}</td>
+      <td class="mono text-right" style="color:#f87171">${fmtPriv(r.privKm||0)}</td>
+    </tr>`).join('');
+}
+</script>
+</body>
+</html>
